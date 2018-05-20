@@ -12,6 +12,7 @@ struct Players
 	nvec3 origin[PLAYER_CHUNKS];
 	nvec3 boundsStart[PLAYER_CHUNKS];
 	nvec3 boundsEnd[PLAYER_CHUNKS];
+	vec3_t velocity[MAX_PLAYERS];
 	void** instance[MAX_PLAYERS];
 	float** hitbox[MAX_PLAYERS];
 	int health[MAX_PLAYERS];

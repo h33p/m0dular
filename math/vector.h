@@ -6,6 +6,40 @@
 
 #include "vector_operators.h"
 #include <stdlib.h>
+//#pragma push_macro("_MSC_VER")
+//#undef _MSC_VER
+//#pragma pop_macro("_MSC_VER")
+
+template<typename T, size_t Q>
+inline void VSqrt(T val[Q])
+{
+	for (int i = 0; i < Q; i++)
+		val[i] = sqrt(val[i]);
+}
+
+template<>
+inline void VSqrt<float, 4>(float val[4])
+{
+	__m128 x = _mm_load_ps(val);
+	x = _mm_sqrt_ps(x);
+	_mm_store_ps(val, x);
+}
+
+template<>
+inline void VSqrt<float, 8>(float val[8])
+{
+	__m256 x = _mm256_load_ps(val);
+	x = _mm256_sqrt_ps(x);
+	_mm256_store_ps(val, x);
+}
+
+template<>
+inline void VSqrt<float, 16>(float val[16])
+{
+	__m512 x = _mm512_load_ps(val);
+	x = _mm512_sqrt_ps(x);
+	_mm512_store_ps(val, x);
+}
 
 template<typename T, size_t N>
 struct vecb
@@ -94,6 +128,106 @@ struct vecb
 	}
 };
 
+template<typename T, size_t N>
+struct vecp
+{
+	union {
+		struct {
+			float x, y, z, w;
+		};
+		T v[4];
+	};
+
+	DEFINE_VEC_OPS(vecp,);
+	DEFINE_VEC_OPS(vecp,const);
+
+	bool operator==(vecp& o)
+	{
+		for (int i = 0; i < N; i++)
+			if (v[i] != o.v[i])
+				return false;
+		return true;
+	}
+
+	bool operator!=(vecp& o)
+	{
+		return !operator==(o);
+	}
+
+	template <size_t D>
+	inline T Dot(vecp& o)
+	{
+		T val = 0;
+		for (int i = 0; i < D; i++)
+			val += v[i] * o.v[i];
+		return val;
+	}
+
+	template <size_t D>
+	inline T LengthSqr()
+	{
+		return Dot<D>(*this);
+	}
+
+	template <size_t D>
+	inline T Length()
+	{
+		return sqrt(Dot<D>(*this));
+	}
+
+	inline T Dot(vecp& o)
+	{
+		return Dot<N>(o);
+	}
+
+	inline T LengthSqr()
+	{
+		return LengthSqr<N>();
+	}
+
+	inline T Length()
+	{
+		return Length<N>();
+	}
+
+	auto Normalized()
+	{
+		auto val = *this;
+		float l = val.Length();
+		val = l ? val / l : 0;
+		return val;
+	}
+
+	void Normalize()
+	{
+		*this = Normalized();
+	}
+
+	template <size_t D>
+	T DistTo(vecp& o)
+	{
+		return (*this - o).template Length<D>();
+	}
+
+	T DistTo(vecp& o)
+	{
+		return DistTo<N>(o);
+	}
+
+	inline T& operator[](int idx)
+	{
+		return v[idx];
+	}
+
+	template<size_t B>
+	inline auto& operator=(vecb<float, B>& vec)
+	{
+		constexpr size_t mv = B < 4 ? B : 4;
+		for (size_t i = 0; i < mv; i++)
+			v[i] = vec[i];
+	}
+};
+
 template<typename T, size_t Y>
 struct vec3soa
 {
@@ -110,7 +244,6 @@ struct vec3soa
 	DEFINE_SOA_OPS(vec3soa,);
 	DEFINE_SOA_OPS(vec3soa,const);
 
-
 	bool operator==(vec3soa& ov)
 	{
 		for (int i = 0; i < X; i++)
@@ -125,16 +258,24 @@ struct vec3soa
 		return !operator==(o);
 	}
 
+	template <size_t D>
+	inline auto& AddUp()
+	{
+		for (size_t i = D - 1; i > 0; i--)
+			for (size_t o = 0; o < Y; o++)
+			v[i-1][o] += v[i][o];
+		return *this;
+	}
+
 	//Constant array functions
 	template <size_t D>
 	inline void Dot(vec3soa& ov, T val[Y])
 	{
-		for (int i = 0; i < Y; i++) {
-			T tv = 0;
-			for (int o = 0; o < D; o++)
-				tv += v[o][i] * ov.v[o][i];
-			val[i] = tv;
-		}
+		vec3soa nv = *this * ov;
+		nv.AddUp<D>();
+
+		for (int i = 0; i < Y; i++)
+			val[i] = nv.z[i];
 	}
 
 	template <size_t D>
@@ -147,8 +288,7 @@ struct vec3soa
 	inline void Length(T val[Y])
 	{
 	    Dot<D>(*this, val);
-		for (int i = 0; i < Y; i++)
-			val[i] = sqrt(val[i]);
+		VSqrt<Y>(val);
 	}
 
 	inline void Dot(vec3soa& o, T val[Y])
@@ -182,12 +322,7 @@ struct vec3soa
 	inline T* Dot(vec3soa& ov)
 	{
 		T val[Y];
-		for (int i = 0; i < Y; i++)
-			val[i] = 0;
-
-		for (int i = 0; i < D; i++)
-			for (int o = 0; o < Y; o++)
-				val[o] += v[i][o] * ov.v[i][o];
+	    Dot<D>(ov, val);
 		return val;
 	}
 
@@ -201,8 +336,7 @@ struct vec3soa
 	inline T* Length()
 	{
 	    T* val = Dot<D>(*this);
-		for (int i = 0; i < Y; i++)
-			val[i] = sqrt(val[i]);
+		VSqrt<Y>(val);
 		return val;
 	}
 
@@ -274,16 +408,66 @@ struct vecSoa
 		return !operator==(o);
 	}
 
+	//Micro-optimized version for 4 sized vector chunks since
+	//Clang did not want to generate SIMD code on a normal loop
+	template<size_t Q = Y>
+    inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int dim)
+	{
+		if (!dim)
+			return;
+
+		__m128 a = _mm_load_ps(v[dim-1]);
+		__m128 b = _mm_load_ps(v[dim]);
+		a = _mm_add_ps(a, b);
+		_mm_store_ps(v[dim-1], a);
+
+		AddUpDim(--dim);
+	}
+
+	template<size_t Q = Y>
+    inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int dim)
+	{
+		if (!dim)
+			return;
+
+		__m256 a = _mm256_load_ps(v[dim-1]);
+		__m256 b = _mm256_load_ps(v[dim]);
+		a = _mm256_add_ps(a, b);
+		_mm256_store_ps(v[dim-1], a);
+
+		AddUpDim(--dim);
+	}
+
+	template<size_t Q = Y>
+    inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value), void>::type AddUpDim(int dim)
+	{
+		if (!dim)
+			return;
+
+		for(; dim > 0; dim--) {
+			T* v1 = v[dim-1];
+			T* v2 = v[dim];
+			for (size_t o = 0; o < Y; o++)
+				v1[o] += v2[o];
+		}
+	}
+
+	template <size_t D>
+	inline auto& AddUp()
+	{
+		AddUpDim(D-1);
+		return *this;
+	}
+
 	//Constant array functions
 	template <size_t D>
 	inline void Dot(vecSoa& ov, T val[Y])
 	{
-		for (int i = 0; i < Y; i++) {
-			T tv = 0;
-			for (int o = 0; o < D; o++)
-				tv += v[o][i] * ov.v[o][i];
-			val[i] = tv;
-		}
+		vecSoa nv = *this * ov;
+		nv.AddUp<D>();
+
+		for (int i = 0; i < Y; i++)
+			val[i] = nv[0][i];
 	}
 
 	template <size_t D>
@@ -296,23 +480,22 @@ struct vecSoa
 	inline void Length(T val[Y])
 	{
 	    Dot<D>(*this, val);
-		for (int i = 0; i < Y; i++)
-			val[i] = sqrt(val[i]);
+		VSqrt<T, Y>(val);
 	}
 
 	inline void Dot(vecSoa& o, T val[Y])
 	{
-		Dot<Y>(o, val);
+		Dot<X>(o, val);
 	}
 
 	inline void LengthSqr(T val[Y])
 	{
-		LengthSqr<Y>(val);
+		LengthSqr<X>(val);
 	}
 
 	inline void Length(T val[Y])
 	{
-		Length<Y>(val);
+		Length<X>(val);
 	}
 
 	template <size_t D>
@@ -323,7 +506,7 @@ struct vecSoa
 
 	inline void DistTo(vecSoa& o, T val[Y])
 	{
-		DistTo<Y>(o, val);
+		DistTo<X>(o, val);
 	}
 
 	//Pointer returning functions
@@ -331,12 +514,7 @@ struct vecSoa
 	inline T* Dot(vecSoa& ov)
 	{
 		T val[Y];
-		for (int i = 0; i < Y; i++)
-			val[i] = 0;
-
-		for (int i = 0; i < D; i++)
-			for (int o = 0; o < Y; o++)
-				val[o] += v[i][o] * ov.v[i][o];
+		Dot<D>(ov, val);
 		return val;
 	}
 
@@ -350,8 +528,7 @@ struct vecSoa
 	inline T* Length()
 	{
 	    T* val = Dot<D>(*this);
-		for (int i = 0; i < Y; i++)
-			val[i] = sqrt(val[i]);
+		VSqrt<T, Y>(val);
 		return val;
 	}
 
@@ -362,12 +539,12 @@ struct vecSoa
 
 	inline T* LengthSqr()
 	{
-		return LengthSqr<Y>();
+		return LengthSqr<X>();
 	}
 
 	inline T* Length()
 	{
-		return Length<Y>();
+		return Length<X>();
 	}
 
 	template <size_t D>
@@ -378,7 +555,7 @@ struct vecSoa
 
 	T* DistTo(vecSoa& o)
 	{
-		return DistTo<Y>(o);
+		return DistTo<X>(o);
 	}
 
 	auto Normalized()
@@ -407,6 +584,9 @@ using vec = vecb<float, N>;
 using vec2 = vec<2>;
 using vec3 = vec<3>;
 using vec4 = vec<4>;
+
+using vec3_t = vecp<float, 3>;
+using vec4_t = vecp<float, 4>;
 
 using xvec3 = vec3soa<float, 4>;
 using yvec3 = vec3soa<float, 8>;
