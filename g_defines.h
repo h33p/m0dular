@@ -4,6 +4,7 @@
 #if defined(_WIN32)
 #define SECTION(sec) __declspec(allocate(sec))
 #define WSECTION(sec) SECTION(sec)
+#include "wincludes.h"
 #include <string.h>
 #define MHandle HMODULE
 #define OLin(Linux)
