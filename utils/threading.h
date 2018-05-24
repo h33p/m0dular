@@ -48,7 +48,6 @@ struct LList
 	};
 
 	Mutex lock;
-	std::atomic_int count;
 	struct LEntry* front;
 	struct LEntry* back;
 	Semaphore sem;
@@ -67,9 +66,11 @@ struct LList
 		return data;
 	}
 
-	T* PopFront() {
+	T* PopFront(Mutex* lck = nullptr) {
 		sem.Wait();
 		lock.lock();
+		if (lck)
+			lck->lock();
 		if (!front) {
 			lock.unlock();
 			return nullptr;
@@ -92,7 +93,7 @@ struct JobThread
 	std::atomic_bool shouldQuit;
 	std::atomic_bool isRunning;
 	std::atomic_bool queueEmpty;
-	Mutex jLock;
+	Mutex* jLock;
 	LList<struct Job>* jobs;
 	int id;
 	void* handle;

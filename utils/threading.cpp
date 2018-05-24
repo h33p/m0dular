@@ -32,10 +32,9 @@ static void* __stdcall ThreadLoop(void* t)
 			job->flags |= IS_FINISHED;
 		} else
 			thread->queueEmpty = true;
-		thread->jLock.lock();
 		struct LList<struct Job>* tJobs = thread->jobs ? thread->jobs : &jobs;
-		job = tJobs->PopFront();
-		thread->jLock.unlock();
+		thread->jLock->unlock();
+		job = tJobs->PopFront(thread->jLock);
 	}
 	thread->isRunning = false;
 	return nullptr;
@@ -47,7 +46,7 @@ static struct JobThread* threads = nullptr;
 static void InitThread(struct JobThread* thread, int id)
 {
 	thread->id = id;
-	thread->jLock = Mutex();
+	thread->jLock = new Mutex();
 	Threading::StartThread(ThreadLoop, thread);
 }
 
@@ -90,11 +89,11 @@ void Threading::FinishQueue()
 		empty = true;
 		for (unsigned int i = 0; i < numThreads; i++) {
 			if (threads[i].jobs)
-				while(threads[i].jobs->count > 0);
+				while(threads[i].jobs->front);
 			else
-				while(jobs.count > 0);
-			if (!threads[i].queueEmpty)
-				empty = false;
+				while(jobs.front);
+			threads[i].jLock->lock();
+			threads[i].jLock->unlock();
 		}
 	}
 }
@@ -116,10 +115,10 @@ JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)
 void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 {
 	for (int i = 0; i < numThreads; i++) {
-		threads[i].jLock.lock();
+		threads[i].jLock->lock();
 		if (threads[i].jobs == jobsQueue)
 			threads[i].jobs = nullptr;
-		threads[i].jLock.unlock();
+		threads[i].jLock->unlock();
 	}
 }
 
@@ -129,7 +128,12 @@ unsigned long Threading::StartThread(threadFn start, void* arg)
 #ifdef _WIN32
 	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)start, arg, 0, &ret);
 #else
-	throw;
+	pthread_attr_t tAttr;
+	pthread_t thread;
+	pthread_attr_init(&tAttr);
+	pthread_attr_setdetachstate(&tAttr, PTHREAD_CREATE_DETACHED);
+	pthread_create(&thread, &tAttr, start, arg);
+	ret = (unsigned long)thread;
 #endif
 	return ret;
 }

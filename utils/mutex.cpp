@@ -6,6 +6,10 @@
 class Mutex::Impl {
   public:
 	Impl() {
+		int ret = pthread_mutex_init(&cs, nullptr);
+		if (ret) {
+			throw;
+		}
   }
 
   ~Impl() {

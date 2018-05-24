@@ -96,6 +96,9 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 				}
 			}
 
+			if (*p == '?')
+				p--;
+
 		} else
 			patternBytes[idx++] = strtoul(p, &p, 16);
 	}
@@ -116,7 +119,7 @@ uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr
 	for (uintptr_t i = start; i < end - length; i++) {
 		bool found = true;
 		for (uintptr_t o = 0; o < length && found; o++)
-			if (patternBytes[o] >= 0 && *(char*)(i + o) != patternBytes[o])
+			if (patternBytes[o] >= 0 && *(unsigned char*)(i + o) != patternBytes[o])
 				found = false;
 
 		if (found) {
@@ -127,7 +130,7 @@ uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr
 
 	if (addr)
 		for (auto& i : operations)
-			i.RunOp(addr);
+			addr = i.RunOp(addr);
 
 	delete[] patternBytes;
 	return addr;

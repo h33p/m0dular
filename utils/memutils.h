@@ -9,4 +9,10 @@ inline uintptr_t GetAbsoluteAddress(uintptr_t addr, intptr_t offset, intptr_t in
 	return addr + *(int*)(addr + offset) + instructionSize;
 }
 
+template<typename T, size_t idx, typename N>
+inline T GetVFunc(N* inst)
+{
+	return (*(T**)inst)[idx];
+}
+
 #endif

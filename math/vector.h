@@ -17,6 +17,7 @@ inline void VSqrt(T val[Q])
 		val[i] = sqrt(val[i]);
 }
 
+#if PSIMD >= 4
 template<>
 inline void VSqrt<float, 4>(float val[4])
 {
@@ -24,7 +25,9 @@ inline void VSqrt<float, 4>(float val[4])
 	x = _mm_sqrt_ps(x);
 	_mm_store_ps(val, x);
 }
+#endif
 
+#if PSIMD >= 8
 template<>
 inline void VSqrt<float, 8>(float val[8])
 {
@@ -32,7 +35,9 @@ inline void VSqrt<float, 8>(float val[8])
 	x = _mm256_sqrt_ps(x);
 	_mm256_store_ps(val, x);
 }
+#endif
 
+#if PSIMD >= 16
 template<>
 inline void VSqrt<float, 16>(float val[16])
 {
@@ -40,6 +45,7 @@ inline void VSqrt<float, 16>(float val[16])
 	x = _mm512_sqrt_ps(x);
 	_mm512_store_ps(val, x);
 }
+#endif
 
 template<typename T, size_t N>
 struct vecb
@@ -411,7 +417,7 @@ struct vecSoa
 	//Micro-optimized version for 4 sized vector chunks since
 	//Clang did not want to generate SIMD code on a normal loop
 	template<size_t Q = Y>
-    inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int dim)
+	inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int dim)
 	{
 		if (!dim)
 			return;
@@ -425,7 +431,7 @@ struct vecSoa
 	}
 
 	template<size_t Q = Y>
-    inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int dim)
+	inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int dim)
 	{
 		if (!dim)
 			return;
@@ -439,7 +445,7 @@ struct vecSoa
 	}
 
 	template<size_t Q = Y>
-    inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value), void>::type AddUpDim(int dim)
+	inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value), void>::type AddUpDim(int dim)
 	{
 		if (!dim)
 			return;
@@ -604,4 +610,12 @@ using nvec = vecSoa<float, X, SIMD_COUNT>;
 
 template <size_t N>
 using veci = vecb<int, N>;
+
+template<size_t X, size_t Y>
+struct matrix
+{
+	vec3soa<float, Y> vec[X];
+};
+
+typedef matrix<4,4> matrix4x4;
 #endif

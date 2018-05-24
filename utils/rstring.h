@@ -11,7 +11,7 @@ inline int rstrcmp(const char* a, const char* b)
 
 inline int rstrcmp(char* a, char* b)
 {
-	return fstrcmp((const char*)a, (const char*)b);
+	return rstrcmp((const char*)a, (const char*)b);
 }
 
 #endif

@@ -49,6 +49,7 @@ int DlIterateCallback(struct dl_phdr_info* info, size_t, void*)
 }
 #endif
 
+#if !defined(_WIN32) && !defined(_WIN64)
 static void InitializeLibraries()
 {
 #if defined(__APPLE__)
@@ -106,6 +107,7 @@ static void InitializeLibraries()
 	dl_iterate_phdr(DlIterateCallback, nullptr);
 #endif
 }
+#endif
 
 MHandle Handles::GetModuleHandle(const char* module)
 {
@@ -120,7 +122,7 @@ MHandle Handles::GetModuleHandle(const char* module)
 			return dlopen(i.library, RTLD_NOLOAD | RTLD_NOW);
 	return nullptr;
 #else
-	return GetModuleHandleA(module);
+	return ::GetModuleHandleA(module);
 #endif
 }
 

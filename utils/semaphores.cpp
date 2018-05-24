@@ -1,11 +1,12 @@
 #include "semaphores.h"
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__)
 #include <semaphore.h>
 
 class Semaphore::Impl {
   public:
 	Impl() {
+		sem_init(&sm, 0, 0);
   }
 
   ~Impl() {
@@ -30,6 +31,36 @@ class Semaphore::Impl {
 	sem_t sm;
 };
 
+#elif defined(__APPLE__)
+#include <dispatch/dispatch.h>
+
+class Semaphore::Impl {
+  public:
+	Impl() {
+		sm = dispatch_semaphore_create(0);
+  }
+
+  ~Impl() {
+		dispatch_release(sm);
+	}
+
+	void Wait() {
+		dispatch_semaphore_wait(sm, DISPATCH_TIME_FOREVER);
+	}
+
+	void Post() {
+  	dispatch_semaphore_signal(sm);
+	}
+
+	unsigned long Count()
+	{
+		int val = 0;
+		return val;
+	}
+
+  private:
+	dispatch_semaphore_t sm;
+};
 #else
 #include "windows.h"
 

@@ -1,11 +1,26 @@
 #ifndef PLAYERS_H
 #define PLAYERS_H
 
+/*
+ * Here is the basic data for the players.
+ * It is used by the various features of the framework.
+ * Game specific functions are needed to be implemented
+ * to fill in the data.
+*/
+
 #include "math/mmath.h"
 
-const int MAX_PLAYERS = 128;
 constexpr int PLAYER_CHUNKS = NumOfSIMD(MAX_PLAYERS);
 const int NAME_LEN = 32;
+const int MAX_HITBOXES = 32;
+constexpr int HITBOX_CHUNKS = NumOfSIMD(MAX_HITBOXES);
+
+struct HitboxList
+{
+	nvec3 start[HITBOX_CHUNKS];
+	nvec3 end[HITBOX_CHUNKS];
+	matrix4x4 w2s[MAX_HITBOXES];
+};
 
 struct Players
 {
