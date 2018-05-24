@@ -1,17 +1,19 @@
 #include "handles.h"
-#include <vector>
 #include <mutex>
 #include "string.h"
 
 #if defined(_WIN32)
 #include <Psapi.h>
 #elif defined(__linux__)
+#include <vector>
 #include <dlfcn.h>
 #include <link.h>
 #include <sys/mman.h>
 #elif defined(__APPLE__)
+#include <vector>
 #include <dlfcn.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <mach/mach_traps.h>
 #include <mach/mach_init.h>
 #include <mach/mach_error.h>
@@ -69,7 +71,7 @@ static void InitializeLibraries()
 	int imageCount = dyldaii->infoArrayCount;
 	mach_msg_type_number_t dataCnt = imageCount * 24;
 	struct dyld_image_info* gdii = nullptr;
-	dii = (struct dyld_image_info*) malloc (dataCnt);
+	gdii = (struct dyld_image_info*) malloc (dataCnt);
 	// 32bit bs 64bit
 	kern_return_t kr2 = vm_read(current_task(), (vm_address_t)dyldaii->infoArray, dataCnt, &readMem, &dataCnt);
 	if (kr2) {
@@ -120,4 +122,35 @@ MHandle Handles::GetModuleHandle(const char* module)
 #else
 	return GetModuleHandleA(module);
 #endif
+}
+
+ModuleInfo Handles::GetModuleInfo(const char* module)
+{
+	ModuleInfo ret;
+	ret.handle = nullptr;
+	ret.address = 0;
+	ret.size = 0;
+#if defined(__linux__) || defined(__APPLE__)
+	lInfoLock.lock();
+	if (!libraries.size())
+		InitializeLibraries();
+
+	for (const dlinfo_t& i : libraries) {
+		if (strstr(i.library, module)) {
+			ret.handle = dlopen(i.library, RTLD_NOLOAD | RTLD_NOW);
+			ret.address = i.address;
+			ret.size = i.size;
+			lInfoLock.unlock();
+			return ret;
+		}
+	}
+	lInfoLock.unlock();
+#else
+	ret.handle = GetModuleHandle(module);
+	MODULEINFO modInfo;
+	GetModuleInformation(GetCurrentProcess(), ret.handle, &modInfo, sizeof(MODULEINFO));
+	ret.address = (uintptr_t)modInfo.lpBaseOfDll;
+	ret.size = (size_t)modInfo.SizeOfImage;
+#endif
+	return ret;
 }

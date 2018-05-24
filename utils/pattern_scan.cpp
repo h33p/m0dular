@@ -103,9 +103,9 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 	length = idx;
 }
 
-uintptr_t FindPattern(const char* pattern, uintptr_t start, uintptr_t end)
+uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr_t end)
 {
-    short* patternBytes = nullptr;
+	short* patternBytes = nullptr;
 	size_t length = 0;
 	std::vector<pOperation> operations;
 
@@ -131,4 +131,10 @@ uintptr_t FindPattern(const char* pattern, uintptr_t start, uintptr_t end)
 
 	delete[] patternBytes;
 	return addr;
+}
+
+uintptr_t PatternScan::FindPattern(const char* pattern, const char* module)
+{
+	ModuleInfo info = Handles::GetModuleInfo(module);
+	return FindPattern(pattern, info.address, info.address + info.size);
 }

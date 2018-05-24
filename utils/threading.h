@@ -2,31 +2,27 @@
 #define THREADING_H
 
 #include "../g_defines.h"
+#include "mutex.h"
+#include "semaphores.h"
+#include <atomic>
 
 #if defined(__posix__)
 #include <unistd.h>
 #include <pthread.h>
-#include <atomic>
 #include <stdlib.h>
 #include <string.h>
 #else
 #define NOMINMAX
 #include "../wincludes.h"
 #include <Psapi.h>
-#include <cstdint>
+#include "stdint.h"
 #endif
-
-#pragma push_macro("if")
-#undef if
-#include <atomic>
-#include <mutex>
-#include <condition_variable>
-#pragma pop_macro("if")
 
 #define IS_RUNNING (1 << 0)
 #define IS_FINISHED (1 << 1)
 
 typedef void(*JobFn)(void*);
+typedef void*(__stdcall*threadFn)(void*);
 
 struct Job
 {
@@ -51,16 +47,15 @@ struct LList
 		LEntry* next;
 	};
 
-	std::mutex lock;
+	Mutex lock;
 	std::atomic_int count;
 	struct LEntry* front;
 	struct LEntry* back;
-	std::condition_variable* notifyVar;
+	Semaphore sem;
 
 	T* Enqueue(T* data) {
 		struct LEntry* entry = new LEntry({ data, nullptr, back });
 		lock.lock();
-		count++;
 		if (back)
 			back->prev = entry;
 		if (!front)
@@ -68,12 +63,12 @@ struct LList
 		entry->next = back;
 		back = entry;
 		lock.unlock();
-		if (notifyVar)
-			notifyVar->notify_one();
+		sem.Post();
 		return data;
 	}
 
 	T* PopFront() {
+		sem.Wait();
 		lock.lock();
 		if (!front) {
 			lock.unlock();
@@ -85,7 +80,6 @@ struct LList
 			front->next = nullptr;
 		else
 			back = nullptr;
-		count--;
 		T* ret = entry->entry;
 		delete entry;
 		lock.unlock();
@@ -98,7 +92,7 @@ struct JobThread
 	std::atomic_bool shouldQuit;
 	std::atomic_bool isRunning;
 	std::atomic_bool queueEmpty;
-	std::mutex* jLock;
+	Mutex jLock;
 	LList<struct Job>* jobs;
 	int id;
 	void* handle;
@@ -113,6 +107,7 @@ namespace Threading
 	void FinishQueue();
 	JobThread* BindThread(LList<struct Job>* jobsQueue);
 	void UnbindThread(LList<struct Job>* jobsQueue);
+	unsigned long StartThread(threadFn start, void* param);
 
 	template<typename N, typename T>
 	Job* QueueJob(N function, T data) {

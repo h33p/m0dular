@@ -2,7 +2,6 @@
 #define MMATH_H
 
 #include "stddef.h"
-#include <type_traits>
 
 #if defined(_WIN32) && defined(__clang__)
 #pragma push_macro("_MSC_VER")

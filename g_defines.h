@@ -1,15 +1,22 @@
 #ifndef G_DEFINES_H
 #define G_DEFINES_H
 
+template<typename T>
+inline constexpr T x64x32(T x64, T x32)
+{
+	if (sizeof(void*) == 0x8)
+		return x64;
+	return x32;
+}
+
 #if defined(_WIN32)
 #define SECTION(sec) __declspec(allocate(sec))
 #define WSECTION(sec) SECTION(sec)
 #include "wincludes.h"
 #include <string.h>
-#define MHandle HMODULE
 #define OLin(Linux)
 #define OWin(Windows) Windows
-#define LinWin(Linux, Windows) Windows
+#define PosixWin(Posix, Windows) Windows
 #define LWM(Linux, Windows, Mac) Windows
 #define OMac(Mac)
 #define OPosix(Posix)
@@ -29,10 +36,9 @@
 #define OWin(Windows)
 #define OMac(Mac)
 #define OPosix(Posix) Posix
-#define LinWin(Linux, Windows) Linux
+#define PosixWin(Posix, Windows) Posix
 #define LWM(Linux, Windows, Mac) Linux
 #define paddr(handle, name) dlsym(handle, name)
-#define MHandle void*
 #define FASTARGS void* thisptr
 #define CFASTARGS thisptr
 #define STDARGS void* thisptr
@@ -49,10 +55,9 @@
 #define OWin(Windows)
 #define OMac(Mac) Mac
 #define OPosix(Posix) Posix
-#define LinWin(Linux, Windows) Linux
+#define PosixWin(Posix, Windows) Posix
 #define LWM(Linux, Windows, Mac) Mac
 #define paddr(handle, name) dlsym(handle, name)
-#define MHandle void*
 #define FASTARGS void* thisptr
 #define CFASTARGS thisptr
 #define STDARGS void* thisptr

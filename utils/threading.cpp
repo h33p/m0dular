@@ -1,7 +1,8 @@
 #include "threading.h"
-#include <thread>
+//#include <thread>
 
-static std::condition_variable newJobNotify;
+//static std::condition_variable newJobNotify;
+static Semaphore newJobSem;
 
 static LList<struct Job> jobs;
 
@@ -15,18 +16,13 @@ struct Job* Threading::_QueueJob(JobFn function, void* data, bool ref)
 	return jobs.Enqueue(job);
 }
 
-static void* ThreadLoop(void* t)
+static void* __stdcall ThreadLoop(void* t)
 {
 	struct JobThread* thread = (struct JobThread*)t;
 
+	struct Job* job = nullptr;
 	thread->isRunning = true;
 	while (!thread->shouldQuit) {
-		thread->jLock->lock();
-		struct LList<struct Job>* tJobs = thread->jobs ? thread->jobs : &jobs;
-		struct Job* job = tJobs->PopFront();
-		std::mutex* lock = &tJobs->lock;
-		std::condition_variable* notify = tJobs->notifyVar;
-		thread->jLock->unlock();
 		if (job) {
 			thread->queueEmpty = false;
 			job->flags |= IS_RUNNING;
@@ -34,15 +30,12 @@ static void* ThreadLoop(void* t)
 			if (!job->ref)
 				free(job->args);
 			job->flags |= IS_FINISHED;
-		} else {
+		} else
 			thread->queueEmpty = true;
-			if (!thread->shouldQuit) {
-				std::unique_lock<std::mutex> lk (*lock);
-				notify->wait(lk);
-				if (!thread->shouldQuit)
-					thread->queueEmpty = false;
-			}
-		}
+		thread->jLock.lock();
+		struct LList<struct Job>* tJobs = thread->jobs ? thread->jobs : &jobs;
+		job = tJobs->PopFront();
+		thread->jLock.unlock();
 	}
 	thread->isRunning = false;
 	return nullptr;
@@ -54,23 +47,14 @@ static struct JobThread* threads = nullptr;
 static void InitThread(struct JobThread* thread, int id)
 {
 	thread->id = id;
-	thread->jLock = new std::mutex();
-#ifdef _WIN32
-	thread->handle = CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)ThreadLoop, thread, NULL, NULL);
-#else
-	pthread_attr_t tAttr;
-	pthread_attr_init(&tAttr);
-	pthread_t* t = (pthread_t*)malloc(sizeof(pthread_t));
-	pthread_attr_setdetachstate(&tAttr, PTHREAD_CREATE_DETACHED);
-	pthread_create(t, &tAttr, ThreadLoop, thread);
-	thread->handle = t;
-#endif
+	thread->jLock = Mutex();
+	Threading::StartThread(ThreadLoop, thread);
 }
 
 void Threading::InitThreads()
 {
-	numThreads = std::thread::hardware_concurrency();
-	jobs.notifyVar = &newJobNotify;
+	//numThreads = std::thread::hardware_concurrency();
+	numThreads = 4;
 	if (numThreads < 2)
 		numThreads = 2;
 	if (numThreads >= 8)
@@ -86,22 +70,9 @@ void Threading::EndThreads()
 	if (!threads)
 		return;
 
-	for (unsigned int i = 0; i < numThreads; i++)
-		threads[i].shouldQuit = true;
-
-	jobs.lock.lock();
-	jobs.lock.unlock();
-	newJobNotify.notify_all();
-
 	for (unsigned int i = 0; i < numThreads; i++) {
-		threads[i].jLock->lock();
-		if (threads[i].jobs) {
-			threads[i].jobs->lock.lock();
-			threads[i].jobs->lock.unlock();
-			threads[i].jobs->notifyVar->notify_all();
-		}
-		threads[i].jLock->unlock();
-		while (threads[i].isRunning);
+		threads[i].shouldQuit = true;
+		threads[i].jobs->sem.Post();
 	}
 
 #ifdef __linux__
@@ -131,16 +102,13 @@ void Threading::FinishQueue()
 JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)
 {
 	for (int i = 0; i < numThreads; i++) {
-		threads[i].jLock->lock();
 		if (!threads[i].jobs) {
-			jobs.lock.lock();
-			jobs.lock.unlock();
-			jobs.notifyVar->notify_all();
 			threads[i].jobs = jobsQueue;
-			threads[i].jLock->unlock();
+			unsigned long cnt = jobs.sem.Count();
+			for (int o = 0; o < numThreads; o++)
+				jobs.sem.Post();
 			return threads + i;
 		}
-		threads[i].jLock->unlock();
 	}
 	return nullptr;
 }
@@ -148,9 +116,20 @@ JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)
 void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 {
 	for (int i = 0; i < numThreads; i++) {
-		threads[i].jLock->lock();
+		threads[i].jLock.lock();
 		if (threads[i].jobs == jobsQueue)
 			threads[i].jobs = nullptr;
-		threads[i].jLock->unlock();
+		threads[i].jLock.unlock();
 	}
+}
+
+unsigned long Threading::StartThread(threadFn start, void* arg)
+{
+	unsigned long ret = 0;
+#ifdef _WIN32
+	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)start, arg, 0, &ret);
+#else
+	throw;
+#endif
+	return ret;
 }
