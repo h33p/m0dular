@@ -1,14 +1,30 @@
 #ifndef VECTOR_H
 #define VECTOR_H
+
+/*
+ * This vector library is focuesed about high efficiency
+ * by laying out the data in a very easily vectorizable way.
+ * A compiler that does automatic SIMD code generation should
+ * be able to work more easily on this layout.
+ *
+ * Clang does a really good job at generating SIMD code, while
+ * MSVC does not always work. Some more tricky parts, such as
+ * square root calculation have manual "hand written" SSE/AVX
+ * implementations, while addition, multiplication, etc. usually
+ * have correct code generation.
+ *
+ * All the code logic should focus around the data layout of the
+ * SOA vectors, even though accessors (in vec3soa case) are implemented
+ * in case you need to conveniently access all dimensions in one go.
+ * The data is laid out like this for a reason.
+*/
+
 #include "stddef.h"
 #include "mmath.h"
 #include "math.h"
 
 #include "vector_operators.h"
 #include <stdlib.h>
-//#pragma push_macro("_MSC_VER")
-//#undef _MSC_VER
-//#pragma pop_macro("_MSC_VER")
 
 template<typename T, size_t Q>
 inline void VSqrt(T val[Q])
@@ -46,6 +62,9 @@ inline void VSqrt<float, 16>(float val[16])
 	_mm512_store_ps(val, x);
 }
 #endif
+
+template<typename T, size_t N>
+struct vecp;
 
 template<typename T, size_t N>
 struct vecb
@@ -131,6 +150,16 @@ struct vecb
 	inline T& operator[](int idx)
 	{
 		return v[idx];
+	}
+
+	template<size_t B>
+	inline operator vecp<T, B>()
+	{
+		constexpr size_t mv = B < 4 ? B : 4;
+		vecb<T, B> vec;
+		for (size_t i = 0; i < mv; i++)
+			vec[i] = v[i];
+		return vec;
 	}
 };
 
@@ -231,6 +260,17 @@ struct vecp
 		constexpr size_t mv = B < 4 ? B : 4;
 		for (size_t i = 0; i < mv; i++)
 			v[i] = vec[i];
+		return *this;
+	}
+
+	template<size_t B>
+	inline operator vecb<T, B>()
+	{
+		constexpr size_t mv = B < 4 ? B : 4;
+		vecb<T, B> vec;
+		for (size_t i = 0; i < mv; i++)
+			vec[i] = v[i];
+		return vec;
 	}
 };
 
@@ -245,6 +285,44 @@ struct vec3soa
 			T z[Y];
 		};
 		T v[X][Y];
+		struct {
+			struct SoaAccessor {
+				T x;
+				T px[Y - 1];
+				T y;
+				T py[Y - 1];
+				T z;
+
+				inline T& operator[](int idx)
+				{
+					return px[idx * Y - 1];
+				}
+
+				inline auto& Set(SoaAccessor& acc)
+				{
+					x = acc.x;
+					y = acc.y;
+					z = acc.z;
+					return *this;
+				}
+
+				template<size_t B>
+				inline auto& operator=(vecb<float, B>& vec)
+				{
+					constexpr size_t mv = B < 3 ? B : 3;
+					auto& it = *this;
+					for (size_t i = 0; i < mv; i++)
+						it[i] = vec[i];
+					return it;
+				}
+			} acc2;
+
+			inline auto& operator[](int idx)
+			{
+				return *(SoaAccessor*)(((T*)&acc2)+idx);
+			}
+
+		} acc;
 	};
 
 	DEFINE_SOA_OPS(vec3soa,);
