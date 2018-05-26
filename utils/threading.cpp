@@ -69,12 +69,20 @@ void Threading::EndThreads()
 	if (!threads)
 		return;
 
-	for (unsigned int i = 0; i < numThreads; i++) {
+	for (unsigned int i = 0; i < numThreads; i++)
 		threads[i].shouldQuit = true;
-		threads[i].jobs->sem.Post();
-	}
 
-#ifdef __linux__
+	for (int o = 0; o < 2; o++)
+		for (unsigned int i = 0; i < numThreads; i++)
+			if (threads[i].jobs)
+				threads[i].jobs->sem.Post();
+			else
+				jobs.sem.Post();
+
+	for (unsigned int i = 0; i < numThreads; i++)
+		while (threads[i].isRunning);
+
+#if defined(__linux__) || defined(__APPLE__)
 	for (int i = 0; i < numThreads; i++)
 		free(threads[i].handle);
 #endif
@@ -103,7 +111,6 @@ JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)
 	for (int i = 0; i < numThreads; i++) {
 		if (!threads[i].jobs) {
 			threads[i].jobs = jobsQueue;
-			unsigned long cnt = jobs.sem.Count();
 			for (int o = 0; o < numThreads; o++)
 				jobs.sem.Post();
 			return threads + i;
@@ -122,18 +129,21 @@ void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 	}
 }
 
-unsigned long Threading::StartThread(threadFn start, void* arg)
+thread_t Threading::StartThread(threadFn start, void* arg, thread_t* thread)
 {
-	unsigned long ret = 0;
 #ifdef _WIN32
-	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)start, arg, 0, &ret);
+	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)start, arg, 0, thread);
 #else
 	pthread_attr_t tAttr;
-	pthread_t thread;
 	pthread_attr_init(&tAttr);
 	pthread_attr_setdetachstate(&tAttr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&thread, &tAttr, start, arg);
-	ret = (unsigned long)thread;
+	pthread_create(thread, &tAttr, start, arg);
 #endif
-	return ret;
+	return *thread;
+}
+
+thread_t Threading::StartThread(threadFn start, void* arg)
+{
+	thread_t thread;
+	return StartThread(start, arg, &thread);
 }

@@ -152,6 +152,11 @@ struct vecb
 		return v[idx];
 	}
 
+	inline const T& operator[](int idx) const
+	{
+		return v[idx];
+	}
+
 	template<size_t B>
 	inline operator vecp<T, B>()
 	{

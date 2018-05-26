@@ -20,6 +20,7 @@ namespace Handles
 {
 	MHandle GetModuleHandle(const char* module);
 	ModuleInfo GetModuleInfo(const char* module);
+	MHandle GetPtrModuleHandle(void* ptr);
 }
 
 #endif

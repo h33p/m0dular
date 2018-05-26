@@ -11,11 +11,17 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+typedef pthread_t thread_t;
+
 #else
 #define NOMINMAX
 #include "../wincludes.h"
 #include <Psapi.h>
 #include "stdint.h"
+
+typedef unsigned long thread_t;
+
 #endif
 
 #define IS_RUNNING (1 << 0)
@@ -108,7 +114,8 @@ namespace Threading
 	void FinishQueue();
 	JobThread* BindThread(LList<struct Job>* jobsQueue);
 	void UnbindThread(LList<struct Job>* jobsQueue);
-	unsigned long StartThread(threadFn start, void* param);
+	thread_t StartThread(threadFn start, void* param);
+	thread_t StartThread(threadFn start, void* param, thread_t* thread);
 
 	template<typename N, typename T>
 	Job* QueueJob(N function, T data) {

@@ -12,6 +12,15 @@ class Semaphore::Impl {
   ~Impl() {
 	}
 
+	int TimedWait(size_t milliseconds)
+	{
+		struct timespec ts;
+		if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+			return 1;
+		ts.tv_nsec += 1000000ull * milliseconds;
+		return sem_timedwait(&sm, ts);
+	}
+
 	void Wait() {
 		sem_wait(&sm);
 	}
@@ -48,6 +57,10 @@ class Semaphore::Impl {
 		dispatch_semaphore_wait(sm, DISPATCH_TIME_FOREVER);
 	}
 
+	int TimedWait(size_t milliseconds) {
+		return dispatch_semaphore_wait(sm, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC * milliseconds));
+	}
+
 	void Post() {
   	dispatch_semaphore_signal(sm);
 	}
@@ -78,6 +91,13 @@ class Semaphore::Impl {
 		WaitForSingleObject(sm, INFINITE);
 	}
 
+	int TimedWait(size_t milliseconds)
+	{
+		if (WaitForSingleObject(sm, milliseconds) == WAIT_OBJECT_0)
+			return 0;
+		return 1;
+	}
+
 	void Post() {
   	ReleaseSemaphore(sm, 1, NULL);
 	}
@@ -104,4 +124,5 @@ Semaphore::Semaphore() : impl(new Semaphore::Impl()) {}
 Semaphore::~Semaphore() { delete impl; }
 void Semaphore::Wait() { impl->Wait(); }
 void Semaphore::Post() { impl->Post(); }
+int Semaphore::TimedWait(size_t milliseconds) { return impl->TimedWait(milliseconds); }
 unsigned long Semaphore::Count() { return impl->Count(); }

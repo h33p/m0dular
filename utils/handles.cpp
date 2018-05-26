@@ -156,3 +156,15 @@ ModuleInfo Handles::GetModuleInfo(const char* module)
 #endif
 	return ret;
 }
+
+MHandle Handles::GetPtrModuleHandle(void* ptr)
+{
+#if defined(__linux__) || defined(__APPLE__)
+	Dl_info info;
+	if (dladdr(ptr, &info) && info.dli_fname)
+		return dlopen(info.dli_fname, RTLD_NOW | RTLD_NOLOAD);
+	return nullptr;
+#else
+	return nullptr;
+#endif
+}
