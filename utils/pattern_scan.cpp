@@ -106,6 +106,31 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 	length = idx;
 }
 
+static void ProduceScanData(short* parsedData, uintptr_t*& data, uintptr_t*& mask, size_t& size)
+{
+	constexpr size_t iSize = sizeof(long);
+	size_t size2 = (size - 1) / iSize + 1;
+
+	data = new uintptr_t[size2];
+	mask = new uintptr_t[size2];
+
+	for (size_t i = 0; i < size2; i++) {
+		data[i] = 0;
+		mask[i] = 0;
+
+		for (int o = 0; o < iSize; o++) {
+			if (i * iSize + o >= size || parsedData[i * iSize + o] < 0)
+				mask[i] |= (0xffll << (8ll * o));
+			if (i * iSize + o < size)
+				data[i] |= (((uintptr_t)((parsedData[i * iSize + o]) & 0xffll)) << (8ll * o));
+
+		}
+		data[i] |= mask[i];
+	}
+
+	size = size2;
+}
+
 uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr_t end)
 {
 	short* patternBytes = nullptr;
@@ -116,13 +141,17 @@ uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr
 
 	ParsePattern(pattern, patternBytes, length, operations);
 
-	for (uintptr_t i = start; i < end - length; i++) {
-		bool found = true;
-		for (uintptr_t o = 0; o < length && found; o++)
-			if (patternBytes[o] >= 0 && *(unsigned char*)(i + o) != patternBytes[o])
-				found = false;
+	uintptr_t* data;
+	uintptr_t* mask;
+	ProduceScanData(patternBytes, data, mask, length);
+	delete[] patternBytes;
 
-		if (found) {
+	for (uintptr_t i = start; i < end - length; i++) {
+		bool miss = false;
+		for (uintptr_t o = 0; o < length && !miss; o++)
+			miss = data[o] ^ (*(uintptr_t*)(i + o * sizeof(uintptr_t)) | mask[o]);
+
+		if (!miss) {
 			addr = i;
 			break;
 		}
@@ -132,7 +161,8 @@ uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr
 		for (auto& i : operations)
 			addr = i.RunOp(addr);
 
-	delete[] patternBytes;
+	delete[] data;
+	delete[] mask;
 	return addr;
 }
 

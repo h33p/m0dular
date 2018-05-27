@@ -48,6 +48,9 @@ Players
 	int armor[MAX_PLAYERS];
 	float time[MAX_PLAYERS];
 	char name[MAX_PLAYERS][NAME_LEN];
+	//Used for sorting the player
+	int sortIDs[MAX_PLAYERS];
+	float fov[MAX_PLAYERS];
 	int count;
 
 	const auto& operator=(Players& o)
@@ -62,6 +65,7 @@ LocalPlayer
 {
 	vec3_t eyePos;
 	vec3_t angles;
+	float time;
 	int weaponAmmo;
 	float weaponDamage;
 	float weaponPenetration;
