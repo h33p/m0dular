@@ -161,7 +161,7 @@ struct vecb
 	inline operator vecp<T, B>()
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
-		vecb<T, B> vec;
+		vecp<T, B> vec;
 		for (size_t i = 0; i < mv; i++)
 			vec[i] = v[i];
 		return vec;
@@ -314,7 +314,7 @@ struct vec3soa
 				template<size_t B>
 				inline auto& operator=(vecb<float, B>& vec)
 				{
-					constexpr size_t mv = B < 3 ? B : 3;
+					constexpr size_t mv = B < X ? B : X;
 					auto& it = *this;
 					for (size_t i = 0; i < mv; i++)
 						it[i] = vec[i];
@@ -697,7 +697,29 @@ using veci = vecb<int, N>;
 template<size_t X, size_t Y>
 struct matrix
 {
-	vec3soa<float, Y> vec[X];
+	vecSoa<float, X, Y> vec;
+	
+	template <size_t X2, size_t Y2>
+	inline auto& operator =(matrix<X2, Y2>& ov)
+	{
+		constexpr size_t MX = X2 < X ? X2 : X;
+		constexpr size_t MY = Y2 < Y ? Y2 : Y;
+		for (size_t i = 0; i < MY; i++)
+			for (size_t o = 0; o < MX; o++)
+				vec[i][o] = ov.vec[i][o];
+		return *this;
+	}
+
+	template<typename T>
+	inline auto Vector3Transform(T& inp)
+	{
+		T out;
+
+		for (size_t i = 0; i < 3; i++)
+			out[i] = inp.Dot(vec[i]) + vec[i][3];
+
+		return out;
+	}
 };
 
 typedef matrix<4,4> matrix4x4;

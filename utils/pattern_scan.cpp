@@ -136,7 +136,7 @@ uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr
 	return addr;
 }
 
-uintptr_t PatternScan::FindPattern(const char* pattern, const char* module)
+uintptr_t PatternScan::FindPattern(const char* __restrict pattern, const char* __restrict module)
 {
 	ModuleInfo info = Handles::GetModuleInfo(module);
 	return FindPattern(pattern, info.address, info.address + info.size);

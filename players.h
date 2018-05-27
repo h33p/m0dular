@@ -24,14 +24,18 @@ enum Flags
 	DUCKING = (1 << 3)
 };
 
-struct HitboxList
+struct  __attribute__((aligned(SIMD_COUNT * 4)))
+HitboxList
 {
 	nvec3 start[HITBOX_CHUNKS];
 	nvec3 end[HITBOX_CHUNKS];
-	matrix4x4 wm[MAX_HITBOXES];
+	matrix<3,4> wm[MAX_HITBOXES];
+	//Radius, damage multiplier
+	nvec<2> data[HITBOX_CHUNKS];
 };
 
-struct Players
+struct __attribute__((aligned(SIMD_COUNT * 4)))
+Players
 {
 	nvec3 origin[PLAYER_CHUNKS];
 	nvec3 boundsStart[PLAYER_CHUNKS];
@@ -51,6 +55,18 @@ struct Players
 		memcpy(this, &o, sizeof(Players));
 		return *this;
 	}
+};
+
+struct __attribute__((aligned(SIMD_COUNT * 4)))
+LocalPlayer
+{
+	vec3_t eyePos;
+	vec3_t angles;
+	int weaponAmmo;
+	float weaponDamage;
+	float weaponPenetration;
+	float weaponArmorPenetration;
+	float weaponRange;
 };
 
 #endif

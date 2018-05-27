@@ -9,6 +9,17 @@ struct HistoryList
 		counter = 0;
 	}
 
+	auto& Push()
+	{
+		counter++;
+		return list[counter % C];
+	}
+
+	void UndoPush()
+	{
+		counter--;
+	}
+
 	auto& Push(T& item)
 	{
 		list[++counter % C] = item;
