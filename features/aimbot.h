@@ -6,7 +6,7 @@
 
 namespace Aimbot
 {
-	void RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer);
+	void RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime);
 }
 
-#endif AIMBOT_H
+#endif
