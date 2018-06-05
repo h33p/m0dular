@@ -32,7 +32,7 @@ static void* __stdcall ThreadLoop(void* t)
 			job->flags |= IS_FINISHED;
 		} else
 			thread->queueEmpty = true;
-		struct LList<struct Job>* tJobs = thread->jobs ? thread->jobs : &jobs;
+		struct LList<struct Job>* tJobs = thread->jobs;
 		thread->jLock->unlock();
 		job = tJobs->PopFront(thread->jLock);
 	}
@@ -47,6 +47,7 @@ static void InitThread(struct JobThread* thread, int id)
 {
 	thread->id = id;
 	thread->jLock = new Mutex();
+	thread->jobs = &jobs;
 	Threading::StartThread(ThreadLoop, thread);
 }
 
@@ -97,9 +98,7 @@ void Threading::FinishQueue()
 		empty = true;
 		for (unsigned int i = 0; i < numThreads; i++) {
 			if (threads[i].jobs)
-				while(threads[i].jobs->front);
-			else
-				while(*(volatile LList<Job>::LEntry**)&jobs.front);
+				while (!threads[i].jobs->IsEmpty());
 			threads[i].jLock->lock();
 			threads[i].jLock->unlock();
 		}
@@ -109,7 +108,7 @@ void Threading::FinishQueue()
 JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)
 {
 	for (int i = 0; i < numThreads; i++) {
-		if (!threads[i].jobs) {
+		if (threads[i].jobs == &jobs || !threads[i].jobs) {
 			threads[i].jobs = jobsQueue;
 			for (int o = 0; o < numThreads; o++)
 				jobs.sem.Post();
@@ -124,7 +123,7 @@ void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 	for (int i = 0; i < numThreads; i++) {
 		threads[i].jLock->lock();
 		if (threads[i].jobs == jobsQueue)
-			threads[i].jobs = nullptr;
+			threads[i].jobs = &jobs;
 		threads[i].jLock->unlock();
 	}
 }

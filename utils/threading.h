@@ -99,6 +99,14 @@ struct LList
 		lock.unlock();
 		return ret;
 	}
+
+	bool IsEmpty()
+	{
+		lock.lock();
+		bool empt = !front;
+		lock.unlock();
+		return empt;
+	}
 };
 
 struct JobThread
