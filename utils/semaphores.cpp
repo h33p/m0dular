@@ -81,7 +81,8 @@ class Semaphore::Impl {
 class Semaphore::Impl {
   public:
 	Impl() {
-		sm = CreateSemaphoreA(nullptr, 0, 0xffffffff, nullptr);
+		sm = CreateSemaphoreA(nullptr, 0, 0xffff, nullptr);
+
   }
 
   ~Impl() {
