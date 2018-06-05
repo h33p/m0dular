@@ -58,13 +58,20 @@ struct LList
 	struct LEntry* back;
 	Semaphore sem;
 
+	LList() {
+		front = nullptr;
+		back = nullptr;
+	}
+
 	T* Enqueue(T* data) {
 		struct LEntry* entry = new LEntry({ data, nullptr, back });
 		lock.lock();
 		if (back)
 			back->prev = entry;
-		if (!front)
+		if (!front) {
 			front = entry;
+			front->prev = nullptr;
+		}
 		entry->next = back;
 		back = entry;
 		lock.unlock();

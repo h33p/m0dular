@@ -5,9 +5,10 @@
 #include "stddef.h"
 #include <type_traits>
 
-#if defined(_WfIN32) && defined(__clang__)
-#pragma push_macro("_MSC_VER")
-#undef _MSC_VER
+#if defined(_MSC_VER) 
+#define __ALIGNED(x) __declspec(align(x))
+#elif defined(clang)
+#define __ALIGNED(x) __attribute__((__aligned__(x)))
 #endif
 
 #include <xmmintrin.h>

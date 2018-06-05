@@ -24,7 +24,7 @@ enum Flags
 	DUCKING = (1 << 3)
 };
 
-struct  __attribute__((aligned(SIMD_COUNT * 4)))
+struct  __ALIGNED(SIMD_COUNT * 4)
 HitboxList
 {
 	nvec3 start[HITBOX_CHUNKS];
@@ -34,7 +34,7 @@ HitboxList
 	nvec<2> data[HITBOX_CHUNKS];
 };
 
-struct __attribute__((aligned(SIMD_COUNT * 4)))
+struct __ALIGNED(SIMD_COUNT * 4)
 Players
 {
 	nvec3 origin[PLAYER_CHUNKS];
@@ -60,7 +60,7 @@ Players
 	}
 };
 
-struct __attribute__((aligned(SIMD_COUNT * 4)))
+struct  __ALIGNED(SIMD_COUNT * 4)
 LocalPlayer
 {
 	vec3_t eyePos;

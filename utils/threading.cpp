@@ -99,7 +99,7 @@ void Threading::FinishQueue()
 			if (threads[i].jobs)
 				while(threads[i].jobs->front);
 			else
-				while(jobs.front);
+				while(*(volatile LList<Job>::LEntry**)&jobs.front);
 			threads[i].jLock->lock();
 			threads[i].jLock->unlock();
 		}
