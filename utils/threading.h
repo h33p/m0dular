@@ -99,6 +99,18 @@ struct LList
 		lock.unlock();
 		return ret;
 	}
+
+#ifdef _MSC_VER
+	__declspec(noinline)
+#else
+	__attribute__((noinline))
+#endif
+	bool IsEmpty()
+	{
+		static volatile short cnt = 0;
+		cnt++;
+		return !front;
+	}
 };
 
 struct JobThread

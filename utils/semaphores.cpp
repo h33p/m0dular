@@ -81,7 +81,7 @@ class Semaphore::Impl {
 class Semaphore::Impl {
   public:
 	Impl() {
-		sm = CreateSemaphoreA(nullptr, 1, 0xffffffff, nullptr);
+		sm = CreateSemaphoreA(nullptr, 0, 0xffffffff, nullptr);
   }
 
   ~Impl() {
@@ -100,7 +100,7 @@ class Semaphore::Impl {
 	}
 
 	void Post() {
-  	ReleaseSemaphore(sm, 1, NULL);
+  		ReleaseSemaphore(sm, 1, NULL);
 	}
 
 	unsigned long Count()
