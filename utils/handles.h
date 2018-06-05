@@ -3,6 +3,7 @@
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <unistd.h>
+#include <stdint.h>
 typedef void* MHandle;
 #else
 #include "../wincludes.h"

@@ -2,6 +2,7 @@
 
 #if defined(__linux__)
 #include <semaphore.h>
+#include <time.h>
 
 class Semaphore::Impl {
   public:
@@ -18,7 +19,7 @@ class Semaphore::Impl {
 		if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
 			return 1;
 		ts.tv_nsec += 1000000ull * milliseconds;
-		return sem_timedwait(&sm, ts);
+		return sem_timedwait(&sm, &ts);
 	}
 
 	void Wait() {
