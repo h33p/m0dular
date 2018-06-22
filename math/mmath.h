@@ -2,12 +2,15 @@
 #define MMATH_H
 
 #include "../wincludes.h"
-#include "stddef.h"
+#include <stddef.h>
 #include <type_traits>
+#define _USE_MATH_DEFINES
+#include <math.h>
+#include <cmath>
 
-#if defined(_MSC_VER) 
+#if defined(_MSC_VER)
 #define __ALIGNED(x) __declspec(align(x))
-#elif defined(clang)
+#else
 #define __ALIGNED(x) __attribute__((__aligned__(x)))
 #endif
 
@@ -15,10 +18,6 @@
 #include <immintrin.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
-
-#if defined(_WIN32) && defined(__clandg__)
-#pragma pop_macro("_MSC_VER")
-#endif
 
 #if defined(OVERRIDE)
 const int SIMD_COUNT = OVERRIDE;
@@ -57,6 +56,21 @@ constexpr int NumOfSIMD(const int val)
 {
 	return (val - 1) / SIMD_COUNT + 1;
 }
+
+template<typename T>
+inline T TMod(T val, T lim)
+{
+	return val % lim;
+}
+
+template<>
+inline float TMod<float>(float val, float lim)
+{
+	return fmodf(val, lim);
+}
+
+constexpr float RAD2DEG = 180.0 / M_PI;
+constexpr float DEG2RAD = M_PI / 180.0;
 
 #include "vector.h"
 

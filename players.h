@@ -16,23 +16,43 @@ const int NAME_LEN = 32;
 const int MAX_HITBOXES = 16;
 constexpr int HITBOX_CHUNKS = NumOfSIMD(MAX_HITBOXES);
 
+/*
+  UPDATED is set when EXISTS is set and something was updated
+  HITBOXES_UPDATED is set when all the hitbox data was updated (so that aimbot data is correct)
+  Other flags are self-explanatory
+*/
+
 enum Flags
 {
 	EXISTS = (1 << 0),
 	UPDATED = (1 << 1),
 	ONGROUND = (1 << 2),
-	DUCKING = (1 << 3)
+	DUCKING = (1 << 3),
+	HITBOXES_UPDATED = (1 << 4)
+};
+
+enum Keys
+{
+	ATTACK1 = (1 << 0),
+	ATTACK2 = (1 << 1),
+	JUMP = (1 << 2)
 };
 
 struct  __ALIGNED(SIMD_COUNT * 4)
 HitboxList
 {
-	nvec3 start[HITBOX_CHUNKS];
-	nvec3 end[HITBOX_CHUNKS];
 	matrix<3,4> wm[MAX_HITBOXES];
 	//Radius, damage multiplier
 	nvec<2> data[HITBOX_CHUNKS];
+
+	vec3_t start[MAX_HITBOXES];
+	vec3_t end[MAX_HITBOXES];
 };
+
+/*
+  All player data is sorted in some fashion.
+  To access the player by its internal ID, use the sortIDs member
+*/
 
 struct __ALIGNED(SIMD_COUNT * 4)
 Players
@@ -71,6 +91,8 @@ LocalPlayer
 	float weaponPenetration;
 	float weaponArmorPenetration;
 	float weaponRange;
+	Keys keys;
+	int ID;
 };
 
 #endif

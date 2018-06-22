@@ -44,7 +44,7 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 	length = strlen(pattern);
 	patternBytes = new short[length];
 
-	while(*++p && p - pattern <= (long)length) {
+	while((++p) - pattern <= (long)length && *p) {
 
 		while (*p == ' ') p++;
 

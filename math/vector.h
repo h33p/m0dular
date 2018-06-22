@@ -25,6 +25,7 @@
 
 #include "vector_operators.h"
 #include <stdlib.h>
+#include <functional>
 
 template<typename T, size_t Q>
 inline void VSqrt(T val[Q])
@@ -106,6 +107,14 @@ struct vecb
 	inline T Length()
 	{
 		return sqrt(Dot<D>(*this));
+	}
+
+	template <size_t D>
+	inline auto& NormalizeAngles(T start, T end)
+	{
+		for (int i = 0; i < D; i++)
+		    v[i] = TMod(v[i] - start + (end - start), end - start) + start;
+		return *this;
 	}
 
 	inline T Dot(vecb& o)
@@ -215,9 +224,22 @@ struct vecp
 		return sqrt(Dot<D>(*this));
 	}
 
+	template <size_t D>
+	inline auto& NormalizeAngles(T start, T end)
+	{
+		for (int i = 0; i < D; i++)
+		    v[i] = TMod(v[i] - start + (end - start), end - start) + start;
+		return *this;
+	}
+
 	inline T Dot(vecp& o)
 	{
 		return Dot<N>(o);
+	}
+
+	inline T Dot(T* o)
+	{
+		return Dot(*(vecp*)o);
 	}
 
 	inline T LengthSqr()
@@ -277,6 +299,30 @@ struct vecp
 			vec[i] = v[i];
 		return vec;
 	}
+
+	inline void ToAngles()
+	{
+		T y, x, len;
+		y = atan2(v[1], v[0]);
+
+		len = Length<2>();
+
+		x = atan2(-v[2], len);
+
+		v[0] = x;
+		v[1] = y;
+		v[2] = 0;
+	}
+
+	inline auto GetAngles(bool toDegrees = false)
+	{
+		auto ret = *this;
+		ret.ToAngles();
+		if (toDegrees)
+			ret *= RAD2DEG;
+		return ret;
+	}
+
 };
 
 template<typename T, size_t Y>
@@ -377,7 +423,7 @@ struct vec3soa
 	inline void Length(T val[Y])
 	{
 	    Dot<D>(*this, val);
-		VSqrt<Y>(val);
+		VSqrt<T, Y>(val);
 	}
 
 	inline void Dot(vec3soa& o, T val[Y])
@@ -472,6 +518,52 @@ struct vec3soa
 	inline T* operator[](int idx)
 	{
 		return v[idx];
+	}
+
+	template<typename Q>
+	inline void TransformInPlace(Q* inp)
+	{
+		Q dot[Y];
+		for (int o = 0; o < Y; o++)
+			for (size_t i = 0; i < X; i++)
+				v[o][i] = Dot(inp[o].vec[i]) + inp[o].vec[i][3];
+	}
+
+	template<typename Q>
+	inline auto Transform(Q* inp)
+	{
+		auto ret = *this;
+		ret.TransformInPlace(inp);
+		return ret;
+	}
+
+	inline void ToAngles()
+	{
+		T y[Y], x[Y], len[Y];
+		for (int o = 0; o < Y; o++)
+			y[o] = atan2(v[1][o], v[0][o]);
+
+		Length<2>(len);
+
+		for (int o = 0; o < Y; o++)
+			x[o] = atan2(-v[1][o], len[o]);
+
+		for (int o = 0; o < Y; o++)
+			v[0][o] = x[o];
+
+		for (int o = 0; o < Y; o++)
+			v[1][o] = y[o];
+
+		for (int o = 0; o < Y; o++)
+			v[2][o] = 0;
+
+	}
+
+	inline auto GetAngles()
+	{
+		auto ret = *this;
+		ret.ToAngles();
+		return ret;
 	}
 };
 
@@ -698,14 +790,14 @@ template<size_t X, size_t Y>
 struct matrix
 {
 	vecSoa<float, X, Y> vec;
-	
+
 	template <size_t X2, size_t Y2>
 	inline auto& operator =(matrix<X2, Y2>& ov)
 	{
 		constexpr size_t MX = X2 < X ? X2 : X;
 		constexpr size_t MY = Y2 < Y ? Y2 : Y;
-		for (size_t i = 0; i < MY; i++)
-			for (size_t o = 0; o < MX; o++)
+		for (size_t i = 0; i < MX; i++)
+			for (size_t o = 0; o < MY; o++)
 				vec[i][o] = ov.vec[i][o];
 		return *this;
 	}

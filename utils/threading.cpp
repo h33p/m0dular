@@ -128,21 +128,25 @@ void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 	}
 }
 
-thread_t Threading::StartThread(threadFn start, void* arg, thread_t* thread)
+thread_t Threading::StartThread(threadFn start, void* arg, bool detached, thread_t* thread)
 {
 #ifdef _WIN32
 	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)start, arg, 0, thread);
 #else
+	pthread_attr_t* attr = NULL;
 	pthread_attr_t tAttr;
-	pthread_attr_init(&tAttr);
-	pthread_attr_setdetachstate(&tAttr, PTHREAD_CREATE_DETACHED);
-	pthread_create(thread, &tAttr, start, arg);
+	if (detached) {
+		pthread_attr_init(&tAttr);
+		pthread_attr_setdetachstate(&tAttr, PTHREAD_CREATE_DETACHED);
+		attr = &tAttr;
+	}
+	pthread_create(thread, attr, start, arg);
 #endif
 	return *thread;
 }
 
-thread_t Threading::StartThread(threadFn start, void* arg)
+thread_t Threading::StartThread(threadFn start, void* arg, bool detached)
 {
 	thread_t thread;
-	return StartThread(start, arg, &thread);
+	return StartThread(start, arg, detached, &thread);
 }
