@@ -80,17 +80,10 @@ static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer
 
 static int LoopPlayers(Target* target, Players* players, size_t count, LocalPlayer* localPlayer, float oldestTime)
 {
-	for (size_t i = 0; i < count; i++) {
-		if (players->flags[i] & Flags::HITBOXES_UPDATED && players->time[i] < oldestTime) {
-			target->id = -2;
-			return 0;
-		}
-	}
-
 	int ret = 0;
 
 	for (size_t i = 0; i < count; i++) {
-		if (players->flags[i] & Flags::HITBOXES_UPDATED && players->fov[i] - 10.f < target->fov) {
+		if (players->flags[i] & Flags::HITBOXES_UPDATED && players->fov[i] - 4.f < target->fov) {
 			if (ScanHitboxes(target, players, i, localPlayer)) {
 				target->id = i;
 				ret = 1;
@@ -104,19 +97,27 @@ static int LoopPlayers(Target* target, Players* players, size_t count, LocalPlay
 static void FindBestTarget(Target* target, HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime)
 {
 
+	char backtrackMask[MAX_PLAYERS];
 	float lowestFov = 1000.f;
+	Players* prevPlayers = nullptr;
+
+	memset(backtrackMask, 0, MAX_PLAYERS);
 
 	for (size_t i = 0; i < BACKTRACK_TICKS; i++) {
 		Players& players = track->GetLastItem(i);
 		size_t count = players.count;
 		Target t2;
+
+		if (!Tracing::BacktrackPlayers(&players, prevPlayers, backtrackMask))
+			break;
+
 		LoopPlayers(&t2, &players, count, localPlayer, oldestTime);
 		if (t2.id >= 0 && t2.fov < lowestFov) {
 			lowestFov = t2.fov;
 			t2.backTick = i;
 			*target = t2;
-		} else if (t2.id == -2)
-			break;
+		}
+		prevPlayers = &players;
 	}
 }
 

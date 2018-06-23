@@ -70,6 +70,7 @@ Players
 	char name[MAX_PLAYERS][NAME_LEN];
 	//Used for sorting the player
 	int sortIDs[MAX_PLAYERS];
+	int unsortIDs[MAX_PLAYERS];
 	float fov[MAX_PLAYERS];
 	int count;
 
@@ -91,7 +92,8 @@ LocalPlayer
 	float weaponPenetration;
 	float weaponArmorPenetration;
 	float weaponRange;
-	Keys keys;
+	int keys;
+	int flags;
 	int ID;
 };
 

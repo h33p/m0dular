@@ -98,7 +98,7 @@ void Threading::FinishQueue()
 		empty = true;
 		for (unsigned int i = 0; i < numThreads; i++) {
 			if (threads[i].jobs)
-				while (threads[i].jobs->IsEmpty());
+				while (!threads[i].jobs->IsEmpty());
 			threads[i].jLock->lock();
 			threads[i].jLock->unlock();
 		}

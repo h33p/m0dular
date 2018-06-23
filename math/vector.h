@@ -358,13 +358,23 @@ struct vec3soa
 				}
 
 				template<size_t B>
-				inline auto& operator=(vecb<float, B>& vec)
+				inline auto& operator=(vecb<T, B>& vec)
 				{
 					constexpr size_t mv = B < X ? B : X;
 					auto& it = *this;
 					for (size_t i = 0; i < mv; i++)
 						it[i] = vec[i];
 					return it;
+				}
+
+				template<size_t B>
+				explicit operator vecb<T, B>() {
+					vecb<T, B> ret;
+					constexpr int mv = B < X ? B : X;
+					auto& it = *this;
+					for (size_t i = 0; i < mv; i++)
+						ret[i] = it[i];
+					return ret;
 				}
 			} acc2;
 
