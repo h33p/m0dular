@@ -256,7 +256,7 @@ struct vecp
 	{
 		auto val = *this;
 		float l = val.Length();
-		val = l ? val / l : 0;
+		val *= l ? 1 / l : 0;
 		return val;
 	}
 
@@ -323,6 +323,36 @@ struct vecp
 		return ret;
 	}
 
+	inline auto GetVectors(vecp& __restrict forward, vecp& __restrict right, vecp& __restrict up, bool fromDegrees = false)
+	{
+		const int VP = 0;
+		const int VY = 1;
+		const int VR = 2;
+
+		T s[3], c[3];
+
+		auto it = *this;
+		if (fromDegrees)
+			it *= DEG2RAD;
+
+		for (size_t i = 0; i < 3; i++)
+			s[i] = std::sin(it[i]);
+
+		for (size_t i = 0; i < 3; i++)
+			c[i] = std::cos(it[i]);
+
+		forward[0] = c[VP] * c[VY];
+		forward[1] = c[VP] * s[VY];
+		forward[2] = -s[VP];
+
+		right[0] = -s[VR] * s[VP] * c[VY] + c[VR] * s[VY];
+		right[1] = -s[VR] * s[VP] * s[VY] - c[VR] * c[VY];
+		right[2] = -s[VR] * c[VP];
+
+		up[0] = c[VR] * s[VP] * c[VY] + s[VR] * s[VY];
+		up[1] = c[VR] * s[VP] * s[VY] - s[VR] * c[VY];
+		up[2] = c[VR] * c[VP];
+	}
 };
 
 template<typename T, size_t Y>
@@ -575,6 +605,7 @@ struct vec3soa
 		ret.ToAngles();
 		return ret;
 	}
+
 };
 
 template<typename T, size_t X, size_t Y>

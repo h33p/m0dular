@@ -23,14 +23,9 @@ VFuncHook::VFuncHook(void* base, bool overrideMode, int minSize)
 
 	vtableLength = EstimateVTableLength(oldVTable, minSize);
 
-#ifdef _WIN32
-	curVTable = (uintptr_t*)malloc(sizeof(uintptr_t*) * (vtableLength + 1));
-	curVTable++;
-	memcpy((void*)(curVTable - 1), (void*)(oldVTable - 1), sizeof(uintptr_t*) * (vtableLength + 1));
-#else
-	curVTable = (uintptr_t*)malloc(sizeof(uintptr_t*) * vtableLength);
-	memcpy((void*)curVTable, (void*)oldVTable, sizeof(uintptr_t*) * vtableLength);
-#endif
+	curVTable = (uintptr_t*)malloc(sizeof(uintptr_t*) * (vtableLength + 2));
+	curVTable += 2;
+	memcpy((void*)(curVTable - 2), (void*)(oldVTable - 2), sizeof(uintptr_t*) * (vtableLength + 2));
 
 	if (overridePointers) {
 		oldVTable = curVTable;
@@ -43,9 +38,7 @@ VFuncHook::~VFuncHook()
 {
 	UnhookAll();
 	uintptr_t* vtbl = overridePointers ? oldVTable : curVTable;
-#ifdef _WIN32
-	vtbl--;
-#endif
+	vtbl -= 2;
 	free(vtbl);
 }
 

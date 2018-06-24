@@ -28,7 +28,8 @@ enum Flags
 	UPDATED = (1 << 1),
 	ONGROUND = (1 << 2),
 	DUCKING = (1 << 3),
-	HITBOXES_UPDATED = (1 << 4)
+	HITBOXES_UPDATED = (1 << 4),
+	FRIENDLY = (1 << 5)
 };
 
 enum Keys
@@ -86,6 +87,7 @@ LocalPlayer
 {
 	vec3_t eyePos;
 	vec3_t angles;
+	vec3_t aimOffset;
 	float time;
 	int weaponAmmo;
 	float weaponDamage;

@@ -4,10 +4,12 @@
 float fovs[64];
 int tid = 0;
 
+static vec3_t shootAngles;
+
 static bool CompareDataLegit(Target* target, LocalPlayer* localPlayer, int out, vec3_t targetVec, int bone)
 {
 	vec3_t angle = (targetVec - localPlayer->eyePos).GetAngles(true);
-	vec3_t angleDiff = (localPlayer->angles - angle).NormalizeAngles<2>(-180.f, 180.f);
+	vec3_t angleDiff = (shootAngles - angle).NormalizeAngles<2>(-180.f, 180.f);
 	float fov = angleDiff.Length<2>();
 	if (fov < fovs[tid])
 		fovs[tid] = fov;
@@ -83,7 +85,7 @@ static int LoopPlayers(Target* target, Players* players, size_t count, LocalPlay
 	int ret = 0;
 
 	for (size_t i = 0; i < count; i++) {
-		if (players->flags[i] & Flags::HITBOXES_UPDATED && players->fov[i] - 4.f < target->fov) {
+		if (players->flags[i] & Flags::HITBOXES_UPDATED && ~players->flags[i] & Flags::FRIENDLY && players->fov[i] - 4.f < target->fov) {
 			if (ScanHitboxes(target, players, i, localPlayer)) {
 				target->id = i;
 				ret = 1;
@@ -124,12 +126,13 @@ static void FindBestTarget(Target* target, HistoryList<Players, BACKTRACK_TICKS>
 Target Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime)
 {
 	Target target;
+	shootAngles = localPlayer->angles + localPlayer->aimOffset;
 
 	FindBestTarget(&target, track, localPlayer, oldestTime);
 
 	if (target.id >= 0) {
 		vec3_t angles = (target.targetVec - localPlayer->eyePos).GetAngles(true);
-		localPlayer->angles = angles;
+		localPlayer->angles = angles - localPlayer->aimOffset;
 	}
 
 	return target;
