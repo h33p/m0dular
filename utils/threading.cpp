@@ -48,7 +48,10 @@ static void InitThread(struct JobThread* thread, int id)
 	thread->id = id;
 	thread->jLock = new Mutex();
 	thread->jobs = &jobs;
-	Threading::StartThread(ThreadLoop, thread);
+	pthread_t handle = Threading::StartThread(ThreadLoop, thread, false);
+	thread->handle = malloc(sizeof(pthread_t));
+	*(pthread_t*)thread->handle = handle;
+
 }
 
 void Threading::InitThreads()
@@ -74,18 +77,19 @@ void Threading::EndThreads()
 		threads[i].shouldQuit = true;
 
 	for (int o = 0; o < 2; o++)
-		for (unsigned int i = 0; i < numThreads; i++)
-			if (threads[i].jobs)
-				threads[i].jobs->sem.Post();
-			else
-				jobs.sem.Post();
-
-	for (unsigned int i = 0; i < numThreads; i++)
-		while (threads[i].isRunning);
+		for (unsigned int i = 0; i < numThreads; i++) {
+			threads[i].jobs->sem.Post();
+			threads[i].jobs->quit = true;
+			threads[i].jobs->lock.unlock();
+		}
 
 #if defined(__linux__) || defined(__APPLE__)
-	for (int i = 0; i < numThreads; i++)
+	for (size_t i = 0; i < numThreads; i++) {
+		pthread_cancel(*(pthread_t*)threads[i].handle);
+		void* ret = nullptr;
+		pthread_join(*(pthread_t*)threads[i].handle, &ret);
 		free(threads[i].handle);
+	}
 #endif
 	free(threads);
 	threads = nullptr;
@@ -107,10 +111,10 @@ void Threading::FinishQueue()
 
 JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)
 {
-	for (int i = 0; i < numThreads; i++) {
+	for (size_t i = 0; i < numThreads; i++) {
 		if (threads[i].jobs == &jobs || !threads[i].jobs) {
 			threads[i].jobs = jobsQueue;
-			for (int o = 0; o < numThreads; o++)
+			for (size_t o = 0; o < numThreads; o++)
 				jobs.sem.Post();
 			return threads + i;
 		}
@@ -120,7 +124,7 @@ JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)
 
 void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 {
-	for (int i = 0; i < numThreads; i++) {
+	for (size_t i = 0; i < numThreads; i++) {
 		threads[i].jLock->lock();
 		if (threads[i].jobs == jobsQueue)
 			threads[i].jobs = &jobs;

@@ -118,7 +118,7 @@ static void ProduceScanData(short* parsedData, uintptr_t*& data, uintptr_t*& mas
 		data[i] = 0;
 		mask[i] = 0;
 
-		for (int o = 0; o < iSize; o++) {
+		for (size_t o = 0; o < iSize; o++) {
 			if (i * iSize + o >= size || parsedData[i * iSize + o] < 0)
 				mask[i] |= (0xffll << (8ll * o));
 			if (i * iSize + o < size)

@@ -54,6 +54,7 @@ struct LList
 	};
 
 	Mutex lock;
+	bool quit;
 	struct LEntry* front;
 	struct LEntry* back;
 	Semaphore sem;
@@ -81,7 +82,16 @@ struct LList
 
 	T* PopFront(Mutex* lck = nullptr) {
 		sem.Wait();
+		if (quit) {
+			sem.Post();
+			return nullptr;
+		}
 		lock.lock();
+		if (quit) {
+			lock.unlock();
+			sem.Post();
+			return nullptr;
+		}
 		if (lck)
 			lck->lock();
 		if (!front) {

@@ -69,6 +69,7 @@ __attribute__((always_inline))
 __attribute__((no_instrument_function))
 #endif
 constexpr unsigned int Crc32Helper<0>(const char* v, unsigned int crc) {
+	(void)v;
 	return ~crc;
 }
 

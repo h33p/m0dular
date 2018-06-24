@@ -64,6 +64,6 @@ void VFuncHook::UnhookAll()
 size_t VFuncHook::EstimateVTableLength(uintptr_t* vtable, int minSize)
 {
 	size_t len = 0;
-	while(*vtable++ || len < minSize) len++;
+	while(*vtable++ || (int)len < minSize) len++;
 	return len;
 }

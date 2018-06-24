@@ -30,7 +30,7 @@
 template<typename T, size_t Q>
 inline void VSqrt(T val[Q])
 {
-	for (int i = 0; i < Q; i++)
+	for (size_t i = 0; i < Q; i++)
 		val[i] = sqrt(val[i]);
 }
 
@@ -77,7 +77,7 @@ struct vecb
 
 	bool operator==(vecb& o)
 	{
-		for (int i = 0; i < N; i++)
+		for (size_t i = 0; i < N; i++)
 			if (v[i] != o.v[i])
 				return false;
 		return true;
@@ -92,7 +92,7 @@ struct vecb
 	inline T Dot(vecb& o)
 	{
 		T val = 0;
-		for (int i = 0; i < D; i++)
+		for (size_t i = 0; i < D; i++)
 			val += v[i] * o.v[i];
 		return val;
 	}
@@ -112,7 +112,7 @@ struct vecb
 	template <size_t D>
 	inline auto& NormalizeAngles(T start, T end)
 	{
-		for (int i = 0; i < D; i++)
+		for (size_t i = 0; i < D; i++)
 		    v[i] = TMod(v[i] - start + (end - start), end - start) + start;
 		return *this;
 	}
@@ -192,7 +192,7 @@ struct vecp
 
 	bool operator==(vecp& o)
 	{
-		for (int i = 0; i < N; i++)
+		for (size_t i = 0; i < N; i++)
 			if (v[i] != o.v[i])
 				return false;
 		return true;
@@ -207,7 +207,7 @@ struct vecp
 	inline T Dot(vecp& o)
 	{
 		T val = 0;
-		for (int i = 0; i < D; i++)
+		for (size_t i = 0; i < D; i++)
 			val += v[i] * o.v[i];
 		return val;
 	}
@@ -227,7 +227,7 @@ struct vecp
 	template <size_t D>
 	inline auto& NormalizeAngles(T start, T end)
 	{
-		for (int i = 0; i < D; i++)
+		for (size_t i = 0; i < D; i++)
 		    v[i] = TMod(v[i] - start + (end - start), end - start) + start;
 		return *this;
 	}
@@ -376,7 +376,7 @@ struct vec3soa
 
 				inline T& operator[](int idx)
 				{
-					return px[idx * Y - 1];
+					return ((T*)px)[(int)idx * (int)Y - 1];
 				}
 
 				inline auto& Set(SoaAccessor& acc)
@@ -400,7 +400,7 @@ struct vec3soa
 				template<size_t B>
 				explicit operator vecb<T, B>() {
 					vecb<T, B> ret;
-					constexpr int mv = B < X ? B : X;
+					constexpr size_t mv = B < X ? B : X;
 					auto& it = *this;
 					for (size_t i = 0; i < mv; i++)
 						ret[i] = it[i];
@@ -421,8 +421,8 @@ struct vec3soa
 
 	bool operator==(vec3soa& ov)
 	{
-		for (int i = 0; i < X; i++)
-			for (int o = 0; o < Y; o++)
+		for (size_t i = 0; i < X; i++)
+			for (size_t o = 0; o < Y; o++)
 				if (v[i][o] != ov.v[i][o])
 					return false;
 		return true;
@@ -449,7 +449,7 @@ struct vec3soa
 		vec3soa nv = *this * ov;
 		nv.AddUp<D>();
 
-		for (int i = 0; i < Y; i++)
+		for (size_t i = 0; i < Y; i++)
 			val[i] = nv.z[i];
 	}
 
@@ -564,7 +564,7 @@ struct vec3soa
 	inline void TransformInPlace(Q* inp)
 	{
 		Q dot[Y];
-		for (int o = 0; o < Y; o++)
+		for (size_t o = 0; o < Y; o++)
 			for (size_t i = 0; i < X; i++)
 				v[o][i] = Dot(inp[o].vec[i]) + inp[o].vec[i][3];
 	}
@@ -580,21 +580,21 @@ struct vec3soa
 	inline void ToAngles()
 	{
 		T y[Y], x[Y], len[Y];
-		for (int o = 0; o < Y; o++)
+		for (size_t o = 0; o < Y; o++)
 			y[o] = atan2(v[1][o], v[0][o]);
 
 		Length<2>(len);
 
-		for (int o = 0; o < Y; o++)
+		for (size_t o = 0; o < Y; o++)
 			x[o] = atan2(-v[1][o], len[o]);
 
-		for (int o = 0; o < Y; o++)
+		for (size_t o = 0; o < Y; o++)
 			v[0][o] = x[o];
 
-		for (int o = 0; o < Y; o++)
+		for (size_t o = 0; o < Y; o++)
 			v[1][o] = y[o];
 
-		for (int o = 0; o < Y; o++)
+		for (size_t o = 0; o < Y; o++)
 			v[2][o] = 0;
 
 	}
@@ -618,8 +618,8 @@ struct vecSoa
 
 	bool operator==(vecSoa& ov)
 	{
-		for (int i = 0; i < X; i++)
-			for (int o = 0; o < Y; o++)
+		for (size_t i = 0; i < X; i++)
+			for (size_t o = 0; o < Y; o++)
 				if (v[i][o] != ov.v[i][o])
 					return false;
 		return true;
@@ -688,7 +688,7 @@ struct vecSoa
 		vecSoa nv = *this * ov;
 		nv.AddUp<D>();
 
-		for (int i = 0; i < Y; i++)
+		for (size_t i = 0; i < Y; i++)
 			val[i] = nv[0][i];
 	}
 

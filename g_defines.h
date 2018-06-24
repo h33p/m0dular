@@ -72,6 +72,7 @@ inline constexpr T x64x32(T x64, T x32)
 #define __thiscall
 #define __fastcall
 #define __stdcall
+#define __cdecl
 #define __declspec (a)
 #define _stricmp(a, b) strcasecmp(a, b)
 #endif
