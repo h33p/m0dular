@@ -48,9 +48,9 @@ static void InitThread(struct JobThread* thread, int id)
 	thread->id = id;
 	thread->jLock = new Mutex();
 	thread->jobs = &jobs;
-	pthread_t handle = Threading::StartThread(ThreadLoop, thread, false);
-	thread->handle = malloc(sizeof(pthread_t));
-	*(pthread_t*)thread->handle = handle;
+	thread_t handle = Threading::StartThread(ThreadLoop, thread, false);
+	thread->handle = malloc(sizeof(thread_t));
+	*(thread_t*)thread->handle = handle;
 
 }
 
