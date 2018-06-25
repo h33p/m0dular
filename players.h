@@ -58,10 +58,10 @@ HitboxList
 struct __ALIGNED(SIMD_COUNT * 4)
 Players
 {
-	nvec3 origin[PLAYER_CHUNKS];
 	nvec3 boundsStart[PLAYER_CHUNKS];
 	nvec3 boundsEnd[PLAYER_CHUNKS];
 	HitboxList hitboxes[MAX_PLAYERS];
+	vec3_t origin[MAX_PLAYERS];
 	vec3_t velocity[MAX_PLAYERS];
 	void* instance[MAX_PLAYERS];
 	int flags[MAX_PLAYERS];
@@ -94,6 +94,7 @@ LocalPlayer
 	float weaponPenetration;
 	float weaponArmorPenetration;
 	float weaponRange;
+	float weaponRangeModifier;
 	int keys;
 	int flags;
 	int ID;

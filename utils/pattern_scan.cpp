@@ -23,7 +23,7 @@ struct pOperation
 		  case 0:
 			  return *(uintptr_t*)(addr + offset);
 		  case 1:
-			  return addr + v1;
+			  return addr + offset;
 		  case 2:
 			  return GetAbsoluteAddress(addr, offset, v1);
 		}
@@ -52,6 +52,11 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 			if (*(p+1) == '?')
 				p++;
 			patternBytes[idx++] = -1;
+		} else if (*p == '@') {
+			assert(!inRelDeref && !derefDone && operations.size() == 0);
+			if (idx)
+				operations.emplace_back(pOperation(1, idx));
+			derefDone = true;
 		} else if (*p == '[') {
 			assert(!inRelDeref && !derefDone);
 			inRelDeref = true;

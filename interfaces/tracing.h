@@ -5,8 +5,13 @@
 
 namespace Tracing
 {
-	int TracePlayers(LocalPlayer* localPlayer, Players* players, vec3_t point, bool skipLocal = true);
-	void TracePlayersSIMD(LocalPlayer* localPlayer, Players* players, nvec3 point, int out[SIMD_COUNT], bool skipLocal = true);
+	/*
+	  Depth specifies the complexity of the trace to be performed.
+	  For example, depth 1 in CSGO would make the trace run through wall penetrating code path,
+	  while depth 0 would be a regular traceray.
+	*/
+	int TracePlayers(LocalPlayer* localPlayer, Players* players, vec3_t point, int eID, int depth = 0, bool skipLocal = true);
+	void TracePlayersSIMD(LocalPlayer* localPlayer, Players* players, nvec3 point, int eID, int out[SIMD_COUNT], int depth = 0, bool skipLocal = true);
 
 	/*
 	  For games supporting moving players back in time.

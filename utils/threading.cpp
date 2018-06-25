@@ -83,14 +83,16 @@ void Threading::EndThreads()
 			threads[i].jobs->lock.unlock();
 		}
 
-#if defined(__linux__) || defined(__APPLE__)
 	for (size_t i = 0; i < numThreads; i++) {
+#if defined(__linux__) || defined(__APPLE__)
 		pthread_cancel(*(pthread_t*)threads[i].handle);
 		void* ret = nullptr;
 		pthread_join(*(pthread_t*)threads[i].handle, &ret);
+#else
+		WaitForSingleObject(*(HANDLE*)threads[i].handle, INFINITE);
+#endif
 		free(threads[i].handle);
 	}
-#endif
 	free(threads);
 	threads = nullptr;
 }

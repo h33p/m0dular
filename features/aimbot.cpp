@@ -5,9 +5,14 @@ float fovs[64];
 int tid = 0;
 
 static vec3_t shootAngles;
+static int minDamage = 50;
 
 static bool CompareDataLegit(Target* target, LocalPlayer* localPlayer, int out, vec3_t targetVec, int bone)
 {
+
+	if (out < minDamage)
+		return false;
+
 	vec3_t angle = (targetVec - localPlayer->eyePos).GetAngles(true);
 	vec3_t angleDiff = (shootAngles - angle).NormalizeAngles<2>(-180.f, 180.f);
 	float fov = angleDiff.Length<2>();
@@ -68,7 +73,7 @@ static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer
 
 			vec3_t average = (hitboxes.start[i] + hitboxes.end[i]) * 0.5f;
 			average = hitboxes.wm[i].Vector3Transform(average);
-			int out = Tracing::TracePlayers(localPlayer, players, average);
+			int out = Tracing::TracePlayers(localPlayer, players, average, id);
 
 			if (true && CompareDataLegit(target, localPlayer, out, average, i))
 				return 1;
