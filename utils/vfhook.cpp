@@ -36,7 +36,8 @@ VFuncHook::VFuncHook(void* base, bool overrideMode, int minSize)
 
 VFuncHook::~VFuncHook()
 {
-	UnhookAll();
+	if (*classBase == curVTable)
+		UnhookAll();
 	uintptr_t* vtbl = overridePointers ? oldVTable : curVTable;
 	vtbl -= 2;
 	free(vtbl);
