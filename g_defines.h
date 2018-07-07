@@ -9,6 +9,8 @@ inline constexpr T x64x32(T x64, T x32)
 	return x32;
 }
 
+#define COMMA ,
+
 #if defined(_WIN32)
 #define SECTION(sec) __declspec(allocate(sec))
 #define WSECTION(sec) SECTION(sec)
@@ -26,6 +28,7 @@ inline constexpr T x64x32(T x64, T x32)
 #define STDARGS
 #define THISARGS void* thisptr
 #define LC
+#define PC
 #define WC COMMA
 #define _noinline __declspec(noinline)
 #elif defined(__linux__)
@@ -44,6 +47,7 @@ inline constexpr T x64x32(T x64, T x32)
 #define STDARGS void* thisptr
 #define THISARGS void* thisptr
 #define LC COMMA
+#define PC COMMA
 #define WC
 #define _ReturnAddress() __builtin_return_address(0)
 #define _noinline __attribute__((noinline))
@@ -63,6 +67,7 @@ inline constexpr T x64x32(T x64, T x32)
 #define STDARGS void* thisptr
 #define THISARGS void* thisptr
 #define LC COMMA
+#define PC COMMA
 #define WC
 #define _ReturnAddress() __builtin_return_address(0)
 #define _noinline __attribute__((noinline))

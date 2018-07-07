@@ -8,16 +8,29 @@
 #include <math.h>
 #include <cmath>
 
-#if defined(_MSC_VER)
-#define __ALIGNED(x) __declspec(align(x))
-#else
+#ifndef _MSC_VER
 #define __ALIGNED(x) __attribute__((__aligned__(x)))
+#else
+#define __ALIGNED(x) __declspec(align(x))
 #endif
 
+#if defined(__clang__) && defined(_MSC_VER)
+#pragma push_macro("_MM_HINT_T0")
+#undef _MM_HINT_T0
+#pragma push_macro("_MM_HINT_T1")
+#undef _MM_HINT_T1
+#pragma push_macro("_MM_HINT_T2")
+#undef _MM_HINT_T2
+#endif
 #include <xmmintrin.h>
 #include <immintrin.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
+#if defined(__clang__) && defined(_MSC_VER)
+#pragma pop_macro("_MM_HINT_T0")
+#pragma pop_macro("_MM_HINT_T1")
+#pragma pop_macro("_MM_HINT_T2")
+#endif
 
 #if defined(OVERRIDE)
 const int SIMD_COUNT = OVERRIDE;
@@ -52,9 +65,21 @@ struct max_avx512
 	static const bool value = (Q * sizeof(W) == 64 && SIMD_COUNT >= 16);
 };
 
+template<size_t A, size_t B>
+struct comp_if
+{
+	static const bool value = (A == B);
+};
+
+template<size_t N>
+constexpr int NumOf(const int val)
+{
+	return (val - 1) / N + 1;
+}
+
 constexpr int NumOfSIMD(const int val)
 {
-	return (val - 1) / SIMD_COUNT + 1;
+	return NumOf<SIMD_COUNT>(val);
 }
 
 template<typename T>
@@ -67,6 +92,16 @@ template<>
 inline float TMod<float>(float val, float lim)
 {
 	return fmodf(val, lim);
+}
+
+inline float NormalizeFloat(float result, float start, float end)
+{
+	result = fmodf(result - start, end - start);
+
+	if (result < start)
+		result += end - start;
+
+	return result + start;
 }
 
 constexpr float RAD2DEG = 180.0 / M_PI;

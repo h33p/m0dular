@@ -24,6 +24,7 @@
 #include "math.h"
 
 #include "vector_operators.h"
+#include "soa_accessor.h"
 #include <stdlib.h>
 #include <functional>
 
@@ -67,6 +68,12 @@ inline void VSqrt<float, 16>(float val[16])
 template<typename T, size_t N>
 struct vecp;
 
+template<typename T, size_t Y>
+struct vec3soa;
+
+template<typename T, size_t X, size_t Y>
+struct vecSoa;
+
 template<typename T, size_t N>
 struct vecb
 {
@@ -74,6 +81,9 @@ struct vecb
 
 	DEFINE_VEC_OPS(vecb,);
 	DEFINE_VEC_OPS(vecb,const);
+
+#define VEC_TYPE vecb
+#include "vec_funcs.h"
 
 	bool operator==(vecb& o)
 	{
@@ -86,74 +96,6 @@ struct vecb
 	bool operator!=(vecb& o)
 	{
 		return !operator==(o);
-	}
-
-	template <size_t D>
-	inline T Dot(vecb& o)
-	{
-		T val = 0;
-		for (size_t i = 0; i < D; i++)
-			val += v[i] * o.v[i];
-		return val;
-	}
-
-	template <size_t D>
-	inline T LengthSqr()
-	{
-		return Dot<D>(*this);
-	}
-
-	template <size_t D>
-	inline T Length()
-	{
-		return sqrt(Dot<D>(*this));
-	}
-
-	template <size_t D>
-	inline auto& NormalizeAngles(T start, T end)
-	{
-		for (size_t i = 0; i < D; i++)
-		    v[i] = TMod(v[i] - start + (end - start), end - start) + start;
-		return *this;
-	}
-
-	inline T Dot(vecb& o)
-	{
-		return Dot<N>(o);
-	}
-
-	inline T LengthSqr()
-	{
-		return LengthSqr<N>();
-	}
-
-	inline T Length()
-	{
-		return Length<N>();
-	}
-
-	auto Normalized()
-	{
-		auto val = *this;
-		float l = val.Length();
-		val = l ? val / l : 0;
-		return val;
-	}
-
-	void Normalize()
-	{
-		*this = Normalized();
-	}
-
-	template <size_t D>
-	T DistTo(vecb& o)
-	{
-		return (*this - o).template Length<D>();
-	}
-
-	T DistTo(vecb& o)
-	{
-		return DistTo<N>(o);
 	}
 
 	inline T& operator[](int idx)
@@ -175,6 +117,17 @@ struct vecb
 			vec[i] = v[i];
 		return vec;
 	}
+
+	template<size_t B>
+	inline operator vec3soa<T, B>()
+	{
+		vec3soa<T, B> ret;
+		for (size_t i = 0; i < 3; i++)
+			for (size_t o = 0; o < B; o++)
+				ret[i][o] = v[i];
+		return ret;
+	}
+
 };
 
 template<typename T, size_t N>
@@ -190,6 +143,9 @@ struct vecp
 	DEFINE_VEC_OPS(vecp,);
 	DEFINE_VEC_OPS(vecp,const);
 
+#define VEC_TYPE vecp
+#include "vec_funcs.h"
+
 	bool operator==(vecp& o)
 	{
 		for (size_t i = 0; i < N; i++)
@@ -201,79 +157,6 @@ struct vecp
 	bool operator!=(vecp& o)
 	{
 		return !operator==(o);
-	}
-
-	template <size_t D>
-	inline T Dot(vecp& o)
-	{
-		T val = 0;
-		for (size_t i = 0; i < D; i++)
-			val += v[i] * o.v[i];
-		return val;
-	}
-
-	template <size_t D>
-	inline T LengthSqr()
-	{
-		return Dot<D>(*this);
-	}
-
-	template <size_t D>
-	inline T Length()
-	{
-		return sqrt(Dot<D>(*this));
-	}
-
-	template <size_t D>
-	inline auto& NormalizeAngles(T start, T end)
-	{
-		for (size_t i = 0; i < D; i++)
-		    v[i] = TMod(v[i] - start + (end - start), end - start) + start;
-		return *this;
-	}
-
-	inline T Dot(vecp& o)
-	{
-		return Dot<N>(o);
-	}
-
-	inline T Dot(T* o)
-	{
-		return Dot(*(vecp*)o);
-	}
-
-	inline T LengthSqr()
-	{
-		return LengthSqr<N>();
-	}
-
-	inline T Length()
-	{
-		return Length<N>();
-	}
-
-	auto Normalized()
-	{
-		auto val = *this;
-		float l = val.Length();
-		val *= l ? 1 / l : 0;
-		return val;
-	}
-
-	void Normalize()
-	{
-		*this = Normalized();
-	}
-
-	template <size_t D>
-	T DistTo(vecp& o)
-	{
-		return (*this - o).template Length<D>();
-	}
-
-	T DistTo(vecp& o)
-	{
-		return DistTo<N>(o);
 	}
 
 	inline T& operator[](int idx)
@@ -300,58 +183,14 @@ struct vecp
 		return vec;
 	}
 
-	inline void ToAngles()
+	template<size_t B>
+	inline operator vec3soa<T, B>()
 	{
-		T y, x, len;
-		y = atan2(v[1], v[0]);
-
-		len = Length<2>();
-
-		x = atan2(-v[2], len);
-
-		v[0] = x;
-		v[1] = y;
-		v[2] = 0;
-	}
-
-	inline auto GetAngles(bool toDegrees = false)
-	{
-		auto ret = *this;
-		ret.ToAngles();
-		if (toDegrees)
-			ret *= RAD2DEG;
+		vec3soa<T, B> ret;
+		for (size_t i = 0; i < 3; i++)
+			for (size_t o = 0; o < B; o++)
+				ret[i][o] = v[i];
 		return ret;
-	}
-
-	inline auto GetVectors(vecp& __restrict forward, vecp& __restrict right, vecp& __restrict up, bool fromDegrees = false)
-	{
-		const int VP = 0;
-		const int VY = 1;
-		const int VR = 2;
-
-		T s[3], c[3];
-
-		auto it = *this;
-		if (fromDegrees)
-			it *= DEG2RAD;
-
-		for (size_t i = 0; i < 3; i++)
-			s[i] = std::sin(it[i]);
-
-		for (size_t i = 0; i < 3; i++)
-			c[i] = std::cos(it[i]);
-
-		forward[0] = c[VP] * c[VY];
-		forward[1] = c[VP] * s[VY];
-		forward[2] = -s[VP];
-
-		right[0] = -s[VR] * s[VP] * c[VY] + c[VR] * s[VY];
-		right[1] = -s[VR] * s[VP] * s[VY] - c[VR] * c[VY];
-		right[2] = -s[VR] * c[VP];
-
-		up[0] = c[VR] * s[VP] * c[VY] + s[VR] * s[VY];
-		up[1] = c[VR] * s[VP] * s[VY] - s[VR] * c[VY];
-		up[2] = c[VR] * c[VP];
 	}
 };
 
@@ -359,6 +198,8 @@ template<typename T, size_t Y>
 struct vec3soa
 {
 	static constexpr size_t X = 3;
+	static constexpr size_t Xt = X;
+	static constexpr size_t Yt = Y;
 	union {
 		struct {
 			T x[Y];
@@ -366,58 +207,14 @@ struct vec3soa
 			T z[Y];
 		};
 		T v[X][Y];
-		struct {
-			struct SoaAccessor {
-				T x;
-				T px[Y - 1];
-				T y;
-				T py[Y - 1];
-				T z;
-
-				inline T& operator[](int idx)
-				{
-					return ((T*)px)[(int)idx * (int)Y - 1];
-				}
-
-				inline auto& Set(SoaAccessor& acc)
-				{
-					x = acc.x;
-					y = acc.y;
-					z = acc.z;
-					return *this;
-				}
-
-				template<size_t B>
-				inline auto& operator=(vecb<T, B>& vec)
-				{
-					constexpr size_t mv = B < X ? B : X;
-					auto& it = *this;
-					for (size_t i = 0; i < mv; i++)
-						it[i] = vec[i];
-					return it;
-				}
-
-				template<size_t B>
-				explicit operator vecb<T, B>() {
-					vecb<T, B> ret;
-					constexpr size_t mv = B < X ? B : X;
-					auto& it = *this;
-					for (size_t i = 0; i < mv; i++)
-						ret[i] = it[i];
-					return ret;
-				}
-			} acc2;
-
-			inline auto& operator[](int idx)
-			{
-				return *(SoaAccessor*)(((T*)&acc2)+idx);
-			}
-
-		} acc;
+		DEFINE_SOA_ACCESSOR;
 	};
 
 	DEFINE_SOA_OPS(vec3soa,);
 	DEFINE_SOA_OPS(vec3soa,const);
+
+#define SOA_TYPE vec3soa
+#include "vecsoa_funcs.h"
 
 	bool operator==(vec3soa& ov)
 	{
@@ -431,150 +228,6 @@ struct vec3soa
 	bool operator!=(vec3soa& o)
 	{
 		return !operator==(o);
-	}
-
-	template <size_t D>
-	inline auto& AddUp()
-	{
-		for (size_t i = D - 1; i > 0; i--)
-			for (size_t o = 0; o < Y; o++)
-			v[i-1][o] += v[i][o];
-		return *this;
-	}
-
-	//Constant array functions
-	template <size_t D>
-	inline void Dot(vec3soa& ov, T val[Y])
-	{
-		vec3soa nv = *this * ov;
-		nv.AddUp<D>();
-
-		for (size_t i = 0; i < Y; i++)
-			val[i] = nv.z[i];
-	}
-
-	template <size_t D>
-	inline void LengthSqr(T val[Y])
-	{
-		Dot<D>(*this, val);
-	}
-
-	template <size_t D>
-	inline void Length(T val[Y])
-	{
-	    Dot<D>(*this, val);
-		VSqrt<T, Y>(val);
-	}
-
-	inline void Dot(vec3soa& o, T val[Y])
-	{
-		Dot<Y>(o, val);
-	}
-
-	inline void LengthSqr(T val[Y])
-	{
-		LengthSqr<Y>(val);
-	}
-
-	inline void Length(T val[Y])
-	{
-		Length<Y>(val);
-	}
-
-	template <size_t D>
-	inline void DistTo(vec3soa& o, T val[Y])
-	{
-		(*this - o).template Length<D>(val);
-	}
-
-	inline void DistTo(vec3soa& o, T val[Y])
-	{
-		DistTo<Y>(o, val);
-	}
-
-	//Pointer returning functions
-	template <size_t D>
-	inline T* Dot(vec3soa& ov)
-	{
-		T val[Y];
-	    Dot<D>(ov, val);
-		return val;
-	}
-
-	template <size_t D>
-	inline T* LengthSqr()
-	{
-		return Dot<D>(*this);
-	}
-
-	template <size_t D>
-	inline T* Length()
-	{
-	    T* val = Dot<D>(*this);
-		VSqrt<Y>(val);
-		return val;
-	}
-
-	inline T* Dot(vec3soa& o)
-	{
-		return Dot<Y>(o);
-	}
-
-	inline T* LengthSqr()
-	{
-		return LengthSqr<Y>();
-	}
-
-	inline T* Length()
-	{
-		return Length<Y>();
-	}
-
-	template <size_t D>
-	T* DistTo(vec3soa& o)
-	{
-		return (*this - o).template Length<D>();
-	}
-
-	T* DistTo(vec3soa& o)
-	{
-		return DistTo<Y>(o);
-	}
-
-	auto Normalized()
-	{
-		auto val = *this;
-		float l[Y];
-		val.Length(l);
-		val = l ? val / l : 0;
-		return val;
-	}
-
-	void Normalize()
-	{
-		*this = Normalized();
-	}
-
-	inline T* operator[](int idx)
-	{
-		return v[idx];
-	}
-
-	template<typename Q>
-	inline void TransformInPlace(Q* inp)
-	{
-		Q dot[Y];
-		for (size_t o = 0; o < Y; o++)
-			for (size_t i = 0; i < X; i++)
-				v[o][i] = Dot(inp[o].vec[i]) + inp[o].vec[i][3];
-	}
-
-	template<typename Q>
-	inline auto Transform(Q* inp)
-	{
-		auto ret = *this;
-		ret.TransformInPlace(inp);
-		return ret;
 	}
 
 	inline void ToAngles()
@@ -606,15 +259,29 @@ struct vec3soa
 		return ret;
 	}
 
+	inline T* operator[](int idx)
+	{
+		return v[idx];
+	}
+
 };
 
 template<typename T, size_t X, size_t Y>
 struct vecSoa
 {
-	T v[X][Y];
+	static constexpr size_t Xt = X;
+	static constexpr size_t Yt = Y;
+	union
+	{
+		T v[X][Y];
+		DEFINE_SOA_ACCESSOR;
+	};
 
 	DEFINE_SOA_OPS(vecSoa,);
 	DEFINE_SOA_OPS(vecSoa,const);
+
+#define SOA_TYPE vecSoa
+#include "vecsoa_funcs.h"
 
 	bool operator==(vecSoa& ov)
 	{
@@ -630,175 +297,22 @@ struct vecSoa
 		return !operator==(o);
 	}
 
-	//Micro-optimized version for 4 sized vector chunks since
-	//Clang did not want to generate SIMD code on a normal loop
-	template<size_t Q = Y>
-	inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int dim)
-	{
-		if (!dim)
-			return;
-
-		__m128 a = _mm_load_ps(v[dim-1]);
-		__m128 b = _mm_load_ps(v[dim]);
-		a = _mm_add_ps(a, b);
-		_mm_store_ps(v[dim-1], a);
-
-		AddUpDim(--dim);
-	}
-
-	template<size_t Q = Y>
-	inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int dim)
-	{
-		if (!dim)
-			return;
-
-		__m256 a = _mm256_load_ps(v[dim-1]);
-		__m256 b = _mm256_load_ps(v[dim]);
-		a = _mm256_add_ps(a, b);
-		_mm256_store_ps(v[dim-1], a);
-
-		AddUpDim(--dim);
-	}
-
-	template<size_t Q = Y>
-	inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value), void>::type AddUpDim(int dim)
-	{
-		if (!dim)
-			return;
-
-		for(; dim > 0; dim--) {
-			T* v1 = v[dim-1];
-			T* v2 = v[dim];
-			for (size_t o = 0; o < Y; o++)
-				v1[o] += v2[o];
-		}
-	}
-
-	template <size_t D>
-	inline auto& AddUp()
-	{
-		AddUpDim(D-1);
-		return *this;
-	}
-
-	//Constant array functions
-	template <size_t D>
-	inline void Dot(vecSoa& ov, T val[Y])
-	{
-		vecSoa nv = *this * ov;
-		nv.AddUp<D>();
-
-		for (size_t i = 0; i < Y; i++)
-			val[i] = nv[0][i];
-	}
-
-	template <size_t D>
-	inline void LengthSqr(T val[Y])
-	{
-		Dot<D>(*this, val);
-	}
-
-	template <size_t D>
-	inline void Length(T val[Y])
-	{
-	    Dot<D>(*this, val);
-		VSqrt<T, Y>(val);
-	}
-
-	inline void Dot(vecSoa& o, T val[Y])
-	{
-		Dot<X>(o, val);
-	}
-
-	inline void LengthSqr(T val[Y])
-	{
-		LengthSqr<X>(val);
-	}
-
-	inline void Length(T val[Y])
-	{
-		Length<X>(val);
-	}
-
-	template <size_t D>
-	inline void DistTo(vecSoa& o, T val[Y])
-	{
-		(*this - o).template Length<D>(val);
-	}
-
-	inline void DistTo(vecSoa& o, T val[Y])
-	{
-		DistTo<X>(o, val);
-	}
-
-	//Pointer returning functions
-	template <size_t D>
-	inline T* Dot(vecSoa& ov)
-	{
-		T val[Y];
-		Dot<D>(ov, val);
-		return val;
-	}
-
-	template <size_t D>
-	inline T* LengthSqr()
-	{
-		return Dot<D>(*this);
-	}
-
-	template <size_t D>
-	inline T* Length()
-	{
-	    T* val = Dot<D>(*this);
-		VSqrt<T, Y>(val);
-		return val;
-	}
-
-	inline T* Dot(vecSoa& o)
-	{
-		return Dot<Y>(o);
-	}
-
-	inline T* LengthSqr()
-	{
-		return LengthSqr<X>();
-	}
-
-	inline T* Length()
-	{
-		return Length<X>();
-	}
-
-	template <size_t D>
-	T* DistTo(vecSoa& o)
-	{
-		return (*this - o).template Length<D>();
-	}
-
-	T* DistTo(vecSoa& o)
-	{
-		return DistTo<X>(o);
-	}
-
-	auto Normalized()
-	{
-		auto val = *this;
-		float l[Y];
-		val.Length(l);
-		val = l ? val / l : 0;
-		return val;
-	}
-
-	void Normalize()
-	{
-		*this = Normalized();
-	}
-
 	inline T* operator[](int idx)
 	{
 		return v[idx];
 	}
 
+	template<size_t B>
+	inline operator vec3soa<T, B>()
+	{
+		constexpr int mv = X < 3 ? X : 3;
+		constexpr int mb = Y < B ? Y : B;
+		vec3soa<T, B> ret;
+		for (size_t i = 0; i < mv; i++)
+			for (size_t o = 0; o < mb; o++)
+				ret[i][o] = v[i][o];
+		return ret;
+	}
 };
 
 template<size_t N>
@@ -843,6 +357,52 @@ struct matrix
 		return *this;
 	}
 
+	inline auto Inverse()
+	{
+		auto ret = *this;
+
+		float det = vec[0][0] * (vec[1][1] * vec[2][2] - vec[2][1] * vec[1][2]) -
+								vec[0][1] * (vec[1][0] * vec[2][2] - vec[1][2] * vec[2][0]) +
+								vec[0][2] * (vec[1][0] * vec[2][1] - vec[1][1] * vec[2][0]);
+
+		float invDet = 1.f / det;
+
+		ret[0][0] = (vec[1][1] * vec[2][2] - vec[2][1] * vec[1][2]) * invDet;
+		ret[0][1] = (vec[0][2] * vec[2][1] - vec[0][1] * vec[2][2]) * invDet;
+		ret[0][2] = (vec[0][1] * vec[1][2] - vec[0][2] * vec[1][1]) * invDet;
+		ret[1][0] = (vec[1][2] * vec[2][0] - vec[1][0] * vec[2][2]) * invDet;
+		ret[1][1] = (vec[0][0] * vec[2][2] - vec[0][2] * vec[2][0]) * invDet;
+		ret[1][2] = (vec[1][0] * vec[0][2] - vec[0][0] * vec[1][2]) * invDet;
+		ret[2][0] = (vec[1][0] * vec[2][1] - vec[2][0] * vec[1][1]) * invDet;
+		ret[2][1] = (vec[2][0] * vec[0][1] - vec[0][0] * vec[2][1]) * invDet;
+		ret[2][2] = (vec[0][0] * vec[1][1] - vec[1][0] * vec[0][1]) * invDet;
+
+		return ret;
+	}
+
+	inline auto InverseTranspose()
+	{
+		auto ret = *this;
+
+		float det = vec[0][0] * (vec[1][1] * vec[2][2] - vec[2][1] * vec[1][2]) -
+								vec[0][1] * (vec[1][0] * vec[2][2] - vec[1][2] * vec[2][0]) +
+								vec[0][2] * (vec[1][0] * vec[2][1] - vec[1][1] * vec[2][0]);
+
+		float invDet = 1.f / det;
+
+		ret[0][0] = (vec[1][1] * vec[2][2] - vec[2][1] * vec[1][2]) * invDet;
+		ret[0][1] = (vec[1][2] * vec[2][0] - vec[1][0] * vec[2][2]) * invDet;
+		ret[0][2] = (vec[1][0] * vec[2][1] - vec[2][0] * vec[1][1]) * invDet;
+		ret[1][0] = (vec[0][2] * vec[2][1] - vec[0][1] * vec[2][2]) * invDet;
+		ret[1][1] = (vec[0][0] * vec[2][2] - vec[0][2] * vec[2][0]) * invDet;
+		ret[1][2] = (vec[2][0] * vec[0][1] - vec[0][0] * vec[2][1]) * invDet;
+		ret[2][0] = (vec[0][1] * vec[1][2] - vec[0][2] * vec[1][1]) * invDet;
+		ret[2][1] = (vec[1][0] * vec[0][2] - vec[0][0] * vec[1][2]) * invDet;
+		ret[2][2] = (vec[0][0] * vec[1][1] - vec[1][0] * vec[0][1]) * invDet;
+
+		return ret;
+	}
+
 	template<typename T>
 	inline auto Vector3Transform(T& inp)
 	{
@@ -852,6 +412,50 @@ struct matrix
 			out[i] = inp.Dot(vec[i]) + vec[i][3];
 
 		return out;
+	}
+
+	template<typename T>
+	inline auto Vector3ITransform(T inp)
+	{
+		T out;
+
+		auto vecRot = vec.Rotate();
+		inp -= vecRot[3];
+
+		for (size_t i = 0; i < 3; i++)
+			out[i] = inp.Dot(vecRot[i]);
+
+		return out;
+	}
+
+	template<typename T>
+	inline auto VecSoaTransform(T& inp)
+	{
+		T out;
+
+		for (size_t i = 0; i < 3; i++)
+			for (size_t o = 0; o < inp.Yt; o++)
+				out[i][o] = ((vec3_t)inp.acc[o]).Dot(vec[i]) + vec[i][3];
+
+		return out;
+	}
+
+	template<typename T>
+	inline auto VectorSoaITransform(T& inp)
+	{
+		T out;
+		T temp = inp - (vec3_t)vec.acc[3];
+
+		for (size_t i = 0; i < 3; i++)
+			for (size_t o = 0; o < inp.Yt; o++)
+				out[i][o] = ((vec3_t)temp.acc[o]).Dot(vec[i]) + vec[i][3];
+
+		return out;
+	}
+
+	inline float* operator[](int idx)
+	{
+		return vec[idx];
 	}
 };
 

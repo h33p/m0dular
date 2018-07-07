@@ -7,15 +7,21 @@ int tid = 0;
 static vec3_t shootAngles;
 static int minDamage = 50;
 
-static bool CompareDataLegit(Target* target, LocalPlayer* localPlayer, int out, vec3_t targetVec, int bone)
+static bool PreCompareDataLegit(Target* target, LocalPlayer* localPlayer, vec3_t targetVec, int bone, float& outFOV)
+{
+	vec3_t angle = (targetVec - localPlayer->eyePos).GetAngles(true);
+	vec3_t angleDiff = (shootAngles - angle).NormalizeAngles<2>(-180.f, 180.f);
+	float fov = angleDiff.Length<2>();
+	outFOV = fov;
+	return fov < target->fov;
+}
+
+static bool CompareDataLegit(Target* target, LocalPlayer* localPlayer, int out, vec3_t targetVec, int bone, float fov)
 {
 
 	if (out < minDamage)
 		return false;
 
-	vec3_t angle = (targetVec - localPlayer->eyePos).GetAngles(true);
-	vec3_t angleDiff = (shootAngles - angle).NormalizeAngles<2>(-180.f, 180.f);
-	float fov = angleDiff.Length<2>();
 	if (fov < fovs[tid])
 		fovs[tid] = fov;
 
@@ -29,7 +35,7 @@ static bool CompareDataLegit(Target* target, LocalPlayer* localPlayer, int out, 
 	return false;
 }
 
-static bool CompareDataRage(Target* target, LocalPlayer* localPlayer, int out, vec3_t targetVec, int bone)
+static bool CompareDataRage(Target* target, LocalPlayer* localPlayer, int out, vec3_t targetVec, int bone, float fov)
 {
 	if (out > target->dmg) {
 		target->boneID = bone;
@@ -40,6 +46,9 @@ static bool CompareDataRage(Target* target, LocalPlayer* localPlayer, int out, v
 	return false;
 }
 
+bool doMultipoint = true;
+float pointScaleVal = 0.8f;
+
 static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer* localPlayer)
 {
 	fovs[id] = 1000.f;
@@ -49,40 +58,44 @@ static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer
 
 	for (size_t i = 0; i < MAX_HITBOXES; i++) {
 
-		//TODO Multipoint
-		if (false) {
-			/*bool quit = false;
+		float fov = 0.f;
 
-			int out[SIMD_COUNT];
-			nvec3 average = (players->hitboxes[id].start[i] + players->hitboxes[id].end[i]) * 0.5f;
-			average.TransformInPlace(players->hitboxes[id].wm + SIMD_COUNT * i);
-			Tracing::TracePlayersSIMD(localPlayer, players, average, out);
+		vec3_t average = (hitboxes.start[i] + hitboxes.end[i]) * 0.5f;
+		average = hitboxes.wm[i].Vector3Transform(average);
 
-			nvec3 angles = average.GetAngles();
+		if (true && !PreCompareDataLegit(target, localPlayer, average, i, fov))
+			continue;
 
-			for (size_t o = 0; o < SIMD_COUNT; o++) {
-				if (out[i] > target->dmg) {
-					target->boneID = i * SIMD_COUNT + o;
+		//TODO Finish multipoint
+		if (doMultipoint) {
+			bool quit = false;
+
+			int out[MULTIPOINT_COUNT];
+			mvec3 mpVec = players->hitboxes[id].mpOffset[i] + players->hitboxes[id].mpDir[i] * players->hitboxes[id].radius[i] * pointScaleVal;
+			mpVec = players->hitboxes[id].wm[i].VecSoaTransform(mpVec);
+			Tracing::TracePlayersSIMD<MULTIPOINT_COUNT>(localPlayer, players, mpVec, id, out);
+
+			for (size_t o = 0; o < MULTIPOINT_COUNT; o++) {
+				if (true && CompareDataLegit(target, localPlayer, out[o], (vec3_t)mpVec.acc[o], i, fov))
 					quit = true;
-				}
+				if (false && CompareDataRage(target, localPlayer, out[o], (vec3_t)mpVec.acc[o], i, fov))
+					quit = true;
 			}
 
 			if (quit)
-			return 1;*/
+				return 1;
 		} else {
 
-			vec3_t average = (hitboxes.start[i] + hitboxes.end[i]) * 0.5f;
-			average = hitboxes.wm[i].Vector3Transform(average);
 			int out = Tracing::TracePlayers(localPlayer, players, average, id);
 
-			if (true && CompareDataLegit(target, localPlayer, out, average, i))
+			if (true && CompareDataLegit(target, localPlayer, out, average, i, fov))
 				return 1;
-			if (false && CompareDataRage(target, localPlayer, out, average, i))
-			    return 1;
+			if (false && CompareDataRage(target, localPlayer, out, average, i, fov))
+				return 1;
 		}
 	}
 
-    return 0;
+	return 0;
 }
 
 static int LoopPlayers(Target* target, Players* players, size_t count, LocalPlayer* localPlayer, float oldestTime)

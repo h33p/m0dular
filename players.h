@@ -16,6 +16,11 @@ const int NAME_LEN = 32;
 const int MAX_HITBOXES = 16;
 constexpr int HITBOX_CHUNKS = NumOfSIMD(MAX_HITBOXES);
 
+#ifndef MULTIPOINT_COUNT
+constexpr size_t MULTIPOINT_COUNT = 8;
+#endif
+using mvec3 = vec3soa<float, MULTIPOINT_COUNT>;
+
 /*
   UPDATED is set when EXISTS is set and something was updated
   HITBOXES_UPDATED is set when all the hitbox data was updated (so that aimbot data is correct)
@@ -39,15 +44,23 @@ enum Keys
 	JUMP = (1 << 2)
 };
 
+/*
+  Somewhat localized, since this is lare enough data which would make the
+	reads jump around a lot when accessing very similar data.
+*/
 struct  __ALIGNED(SIMD_COUNT * 4)
 HitboxList
 {
 	matrix<3,4> wm[MAX_HITBOXES];
-	//Radius, damage multiplier
-	nvec<2> data[HITBOX_CHUNKS];
 
 	vec3_t start[MAX_HITBOXES];
 	vec3_t end[MAX_HITBOXES];
+
+	float damageMul[MAX_HITBOXES];
+	float radius[MAX_HITBOXES];
+
+	mvec3 mpOffset[MAX_HITBOXES];
+	mvec3 mpDir[MAX_HITBOXES];
 };
 
 /*
@@ -74,6 +87,9 @@ Players
 	int unsortIDs[MAX_PLAYERS];
 	float fov[MAX_PLAYERS];
 	int count;
+
+	//Late in the list, since this data is a couple of pages long
+	matrix<3,4> bones[MAX_PLAYERS][MAX_BONES];
 
 	const auto& operator=(Players& o)
 	{
