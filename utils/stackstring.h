@@ -31,7 +31,7 @@ template<size_t slen>
 struct StackString
 {
 
-	static constexpr int len = (slen + 2) / sizeof(stt) + 1;
+	static constexpr int len = slen / sizeof(stt) + 1;
 
 	volatile stt stack[len];
 
@@ -39,7 +39,9 @@ struct StackString
 	__alwaysinline
 	constexpr StackString(const char (&Array)[slen])
 	{
-		unroll_read<len>((rstt*)stack, (rstt*)Array);
+		unroll_read<len-1>((rstt*)stack, (rstt*)Array);
+		for (int i = (len - 1) * sizeof(rstt); i < slen; i++)
+			((char*)stack)[i] = Array[i];
 	}
 
 	__alwaysinline
