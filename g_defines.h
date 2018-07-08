@@ -15,6 +15,7 @@ inline constexpr T x64x32(T x64, T x32)
 #define SECTION(sec) __declspec(allocate(sec))
 #define WSECTION(sec) SECTION(sec)
 #include "wincludes.h"
+#include <intrin.h>
 #include <string.h>
 #define OLin(Linux)
 #define OWin(Windows) Windows
@@ -80,6 +81,12 @@ inline constexpr T x64x32(T x64, T x32)
 #define __cdecl
 #define __declspec (a)
 #define _stricmp(a, b) strcasecmp(a, b)
+#endif
+
+#ifdef _MSC_VER
+#define FRAME_POINTER() *((void**)_AddressOfReturnAddress() - 1)
+#else
+#define FRAME_POINTER() __builtin_frame_address(0)
 #endif
 
 #endif

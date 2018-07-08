@@ -12,19 +12,20 @@ typedef stt rstt;
 
 template <int N>
 __alwaysinline
-constexpr int unroll_read(rstt* a, rstt* b, int mn)
+constexpr int unroll_read(rstt* a, rstt* b)
 {
 	a[N - 1] = b[N - 1];
-	int ret = unroll_read<N - 1>(a, b, mn);
+	int ret = unroll_read<N - 1>(a, b);
 	return ret;
 };
 
 template<>
 __alwaysinline
-constexpr int unroll_read<0>(rstt* a, rstt* b, int mn)
+constexpr int unroll_read<0>(rstt* a, rstt* b)
 {
 	return 1;
 };
+
 
 template<size_t slen>
 struct StackString
@@ -38,7 +39,7 @@ struct StackString
 	__alwaysinline
 	constexpr StackString(const char (&Array)[slen])
 	{
-		unroll_read<len>((rstt*)stack, (rstt*)Array, len);
+		unroll_read<len>((rstt*)stack, (rstt*)Array);
 	}
 
 	__alwaysinline
@@ -53,6 +54,11 @@ struct StackString
 	}
 
 	inline operator const char*() const
+	{
+		return val();
+	}
+
+	inline operator const char*()
 	{
 		return val();
 	}
