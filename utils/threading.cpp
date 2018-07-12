@@ -57,7 +57,7 @@ static void InitThread(struct JobThread* thread, int id)
 void Threading::InitThreads()
 {
 	//numThreads = std::thread::hardware_concurrency();
-	numThreads = 4;
+	numThreads = NUM_THREADS;
 	if (numThreads < 2)
 		numThreads = 2;
 	if (numThreads >= 8)

@@ -15,7 +15,6 @@ inline constexpr T x64x32(T x64, T x32)
 #define SECTION(sec) __declspec(allocate(sec))
 #define WSECTION(sec) SECTION(sec)
 #include "wincludes.h"
-#include <intrin.h>
 #include <string.h>
 #define OLin(Linux)
 #define OWin(Windows) Windows

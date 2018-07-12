@@ -14,10 +14,10 @@ inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int di
 	if (!dim)
 		return;
 
-	__m128 a = _mm_load_ps(v[dim-1]);
-	__m128 b = _mm_load_ps(v[dim]);
+	__m128 a = _mm_loadu_ps(v[dim-1]);
+	__m128 b = _mm_loadu_ps(v[dim]);
 	a = _mm_add_ps(a, b);
-	_mm_store_ps(v[dim-1], a);
+	_mm_storeu_ps(v[dim-1], a);
 
 	AddUpDim(--dim);
 }
@@ -28,10 +28,10 @@ inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int di
 	if (!dim)
 		return;
 
-	__m256 a = _mm256_load_ps(v[dim-1]);
-	__m256 b = _mm256_load_ps(v[dim]);
+	__m256 a = _mm256_loadu_ps(v[dim-1]);
+	__m256 b = _mm256_loadu_ps(v[dim]);
 	a = _mm256_add_ps(a, b);
-	_mm256_store_ps(v[dim-1], a);
+	_mm256_storeu_ps(v[dim-1], a);
 
 	AddUpDim(--dim);
 }
@@ -156,6 +156,36 @@ T* DistTo(SOA_TYPE& o)
 	return DistTo<X>(o);
 }
 
+auto DirToRay(SOA_TYPE& a, SOA_TYPE& b)
+{
+	auto c = *this - a;
+	auto d = b - a;
+
+	T t[Y], ls[Y];
+	c.Dot(d, t);
+	d.LengthSqr(ls);
+
+	for (int i = 0; i < Y; i++)
+		t[i] = t[i] / ls[i];
+
+	return a + d * t;
+}
+
+auto DirToLine(SOA_TYPE& a, SOA_TYPE& b)
+{
+	auto c = *this - a;
+	auto d = b - a;
+
+	T t[Y], ls[Y];
+	c.Dot(d, t);
+	d.LengthSqr(ls);
+
+	for (int i = 0; i < Y; i++)
+		t[i] = std::clamp(t[i] / ls[i], T(0), T(1));
+
+	return a + d * t;
+}
+
 auto Normalized()
 {
 	auto val = *this;
@@ -207,6 +237,58 @@ inline auto& AssignCol(int col, T val)
 	vecb<T, Y> vec;
 	return AssignCol(col, vec.Assign(val));
 }
+
+
+inline auto& MulCol(int col, vecb<T, Y> vec)
+{
+	for (size_t i = 0; i < Y; i++)
+		v[col][i] *= vec[i];
+
+	return *this;
+}
+
+inline auto& MulCol(int col, vecp<T, Y> vec)
+{
+	return MulCol(col, (vecb<T, Y>)vec);
+}
+
+inline auto& MulCol(int col, T val)
+{
+	for (int i = 0; i < Y; i++)
+		v[col][i] *= val;
+}
+
+inline auto& MulCol(int col, T* val)
+{
+	for (int i = 0; i < Y; i++)
+		v[col][i] *= val[i];
+}
+
+
+inline auto& AddCol(int col, vecb<T, Y> vec)
+{
+	for (size_t i = 0; i < Y; i++)
+		v[col][i] += vec[i];
+
+	return *this;
+}
+
+inline auto& AddCol(int col, vecp<T, Y> vec)
+{
+	return MulCol(col, (vecb<T, Y>)vec);
+}
+
+inline auto& AddCol(int col, T val)
+{
+	for (int i = 0; i < Y; i++)
+		v[col][i] *= val;
+}
+inline auto& AddCol(int col, T* val)
+{
+	for (int i = 0; i < Y; i++)
+		v[col][i] *= val[i];
+}
+
 
 inline auto Rotate()
 {

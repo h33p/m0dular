@@ -67,9 +67,10 @@ auto Normalized()
 	return val;
 }
 
-void Normalize()
+auto& Normalize()
 {
 	*this = Normalized();
+	return *this;
 }
 
 template <size_t D>
@@ -81,6 +82,26 @@ T DistTo(VEC_TYPE& o)
 T DistTo(VEC_TYPE& o)
 {
 	return DistTo<N>(o);
+}
+
+auto DirToRay(VEC_TYPE& a, VEC_TYPE& b)
+{
+	auto c = *this - a;
+	auto d = b - a;
+
+	T t = c.Dot(d) / d.LengthSqr();
+
+	return a + t * d;
+}
+
+auto DirToLine(VEC_TYPE& a, VEC_TYPE& b)
+{
+	auto c = *this - a;
+	auto d = b - a;
+
+	T t = std::clamp(c.Dot(d) / d.LengthSqr(), T(0), T(1));
+
+	return a + t * d;
 }
 
 template<size_t Q = N>
@@ -96,7 +117,7 @@ Cross(VEC_TYPE& o)
 
 
 template<size_t Q = N>
-inline typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>>::type
+inline typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>&>::type
 ToAngles()
 {
 	T y, x, len;

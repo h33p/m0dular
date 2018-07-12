@@ -155,17 +155,17 @@ struct matrix
 	{
 		auto out = VecSoaTransform(vec);
 
-		constexpr int MX = 2 < T::Xt ? 2 : T::Xt;
+		constexpr size_t MX = 2 < T::Xt ? 2 : T::Xt;
 
-		for (int o = 0; o < T::Yt; o++)
+		for (size_t o = 0; o < T::Yt; o++)
 			flags[o] = true;
 
-		for (int i = 0; i < MX; i++)
-			for (int o = 0; o < T::Yt; o++)
+		for (size_t i = 0; i < MX; i++)
+			for (size_t o = 0; o < T::Yt; o++)
 				if (out[i][o] > screen[i])
 					flags[o] = false;
 
-		for (int o = 0; o < T::Yt; o++)
+		for (size_t o = 0; o < T::Yt; o++)
 			if (flags[o]) {
 				out[0][o] = screen[0] * 0.5f + out[0][o] * (screen[0] * 0.5f);
 				out[1][o] = screen[1] * 0.5f - out[1][o] * (screen[1] * 0.5f);
@@ -178,7 +178,7 @@ struct matrix
 	inline auto WorldToScreen(T& vec, vecb<float, 2> screen, bool& status)
 	{
 		auto out = Vector3Transform(vec);
-		if (out[0] <= screen[0] && out[1] >= screen[1])
+		if (out[0] <= screen[0] && out[1] <= screen[1])
 		{
 			out[0] = screen[0] * 0.5f + out[0] * screen[0] * 0.5f;
 			out[1] = screen[1] * 0.5f - out[1] * screen[1] * 0.5f;
