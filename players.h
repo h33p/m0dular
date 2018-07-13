@@ -9,6 +9,7 @@
 */
 
 #include "math/mmath.h"
+#include "utils/intersect.h"
 #include <string.h>
 
 constexpr int PLAYER_CHUNKS = NumOfSIMD(MAX_PLAYERS);
@@ -48,7 +49,7 @@ enum Keys
   Somewhat localized, since this is lare enough data which would make the
 	reads jump around a lot when accessing very similar data.
 */
-struct  __ALIGNED(SIMD_COUNT * 4)
+struct alignas(SIMD_COUNT * 4)
 HitboxList
 {
 	matrix<3,4> wm[MAX_HITBOXES];
@@ -68,14 +69,15 @@ HitboxList
   To access the player by its internal ID, use the sortIDs member
 */
 
-struct __ALIGNED(SIMD_COUNT * 4)
+struct alignas(SIMD_COUNT * 4)
 Players
 {
 	nvec3 boundsStart[PLAYER_CHUNKS];
 	nvec3 boundsEnd[PLAYER_CHUNKS];
-	HitboxList hitboxes[MAX_PLAYERS];
 	vec3_t origin[MAX_PLAYERS];
 	vec3_t velocity[MAX_PLAYERS];
+	CapsuleColliderSOA<SIMD_COUNT> colliders[MAX_PLAYERS][NumOfSIMD(MAX_HITBOXES)];
+	HitboxList hitboxes[MAX_PLAYERS];
 	void* instance[MAX_PLAYERS];
 	int flags[MAX_PLAYERS];
 	int health[MAX_PLAYERS];
@@ -98,12 +100,13 @@ Players
 	}
 };
 
-struct  __ALIGNED(SIMD_COUNT * 4)
+struct alignas(SIMD_COUNT * 4)
 LocalPlayer
 {
 	vec3_t eyePos;
 	vec3_t angles;
 	vec3_t aimOffset;
+	vec3_t velocity;
 	float time;
 	int weaponAmmo;
 	float weaponDamage;

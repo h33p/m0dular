@@ -8,7 +8,6 @@ class Mutex::Impl {
 	Impl() {
 		int ret = pthread_mutex_init(&cs, nullptr);
 		if (ret) {
-			throw;
 		}
   }
 

@@ -1,7 +1,9 @@
 #ifndef STACK_STRING
 #define STACK_STRING
 
-typedef unsigned long stt;
+#include <stdio.h>
+
+typedef unsigned char stt;
 typedef stt rstt;
 
 #ifdef _WIN32
@@ -12,16 +14,16 @@ typedef stt rstt;
 
 template <int N>
 __alwaysinline
-constexpr int unroll_read(rstt* a, rstt* b)
+constexpr int unroll_read(rstt* a, rstt* b, int FN)
 {
-	a[N - 1] = b[N - 1];
-	int ret = unroll_read<N - 1>(a, b);
+	a[N - 1] = b[FN - N];
+	int ret = unroll_read<N - 1>(a, b, FN);
 	return ret;
 };
 
 template<>
 __alwaysinline
-constexpr int unroll_read<0>(rstt* a, rstt* b)
+constexpr int unroll_read<0>(rstt* a, rstt* b, int FN)
 {
 	return 1;
 };
@@ -32,16 +34,30 @@ struct StackString
 {
 
 	static constexpr int len = slen / sizeof(stt) + 1;
+	static constexpr int len2 = slen / sizeof(stt);
 
 	volatile stt stack[len];
+	volatile stt stack2[len];
+	volatile stt stack2s[len/2];
+	volatile stt stack2e[len2 - len/2];
 
 	//We have to always inline the functions for the trick to work
 	__alwaysinline
 	constexpr StackString(const char (&Array)[slen])
 	{
-		unroll_read<len-1>((rstt*)stack, (rstt*)Array);
+
+		unroll_read<len2 - len / 2>((rstt*)stack2e, (rstt*)Array + len / 2, len2 - len / 2);
+		unroll_read<len / 2>((rstt*)stack2s, (rstt*)Array, len / 2);
+
 		for (int i = (len - 1) * sizeof(rstt); i < slen; i++)
-			((char*)stack)[i] = Array[i];
+			((char*)stack2)[i] = Array[i];
+
+		unroll_read<len2 - len / 2>((rstt*)stack + len / 2, (rstt*)stack2e, len2 - len / 2);
+		unroll_read<len / 2>((rstt*)stack, (rstt*)stack2s, len / 2);
+
+		for (int i = (len - 1) * sizeof(rstt); i < slen; i++)
+			((char*)stack)[i] = ((char*)stack2)[i];
+
 	}
 
 	__alwaysinline

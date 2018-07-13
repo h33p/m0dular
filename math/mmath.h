@@ -10,10 +10,7 @@
 #include <algorithm>
 
 #ifndef _MSC_VER
-#define __ALIGNED(x) __attribute__((__aligned__(x)))
 #include <nmmintrin.h>
-#else
-#define __ALIGNED(x) __declspec(align(x))
 #endif
 
 #if defined(__clang__) && defined(_MSC_VER)
@@ -146,7 +143,7 @@ inline float NormalizeFloat(float result, float start, float end)
 {
 	result = fmodf(result - start, end - start);
 
-	if (result < start)
+	if (result < 0.f)
 		result += end - start;
 
 	return result + start;

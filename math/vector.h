@@ -336,6 +336,8 @@ using xvec3 = vec3soa<float, 4>;
 using yvec3 = vec3soa<float, 8>;
 using zvec3 = vec3soa<float, 16>;
 using nvec3 = vec3soa<float, SIMD_COUNT>;
+template<size_t Y>
+using svec3 = vec3soa<float, Y>;
 
 template<size_t X>
 using xvec = vecSoa<float, X, 4>;
