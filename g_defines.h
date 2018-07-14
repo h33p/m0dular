@@ -16,6 +16,8 @@ inline constexpr T x64x32(T x64, T x32)
 #define WSECTION(sec) SECTION(sec)
 #include "wincludes.h"
 #include <string.h>
+//#define CLZ(x) //__lzcnt(x)
+#define CLZ(x) __builtin_clz(x)
 #define OLin(Linux)
 #define OWin(Windows) Windows
 #define PosixWin(Posix, Windows) Windows
@@ -35,6 +37,8 @@ inline constexpr T x64x32(T x64, T x32)
 #define __posix__
 #define SECTION(sec) __attribute__((section(sec)))
 #define WSECTION(sec)
+#define CLZ(x) __builtin_clz(x)
+#define CTZ(x) __builtin_ctz(x)
 #define OLin(Linux) Linux
 #define OWin(Windows)
 #define OMac(Mac)
@@ -55,6 +59,8 @@ inline constexpr T x64x32(T x64, T x32)
 #define __posix__
 #define SECTION(sec) __attribute__((section(sec)))
 #define WSECTION(sec)
+#define CLZ(x) __builtin_clz(x)
+#define CTZ(x) __builtin_ctz(x)
 #define OLin(Linux)
 #define OWin(Windows)
 #define OMac(Mac) Mac

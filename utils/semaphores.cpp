@@ -7,8 +7,9 @@
 class Semaphore::Impl {
   public:
 	Impl() {
-		sem_init(&sm, 0, 0);
-  }
+		if (sem_init(&sm, 0, 0) == -1)
+			throw;
+	}
 
   ~Impl() {
 	}

@@ -39,7 +39,12 @@ struct HistoryList
 
 	size_t Count()
 	{
-		return counter;
+		return std::min(counter, C);
+	}
+
+	void Reset()
+	{
+		counter = 0;
 	}
 
   private:

@@ -118,15 +118,13 @@ unsigned int CapsuleColliderSOA<N>::Intersect(vec3_t a, vec3_t b)
 	unsigned int flags = 0;
 	svec3<N> va = a, vb = b;
 
-	float radiusSqr = radius * radius;
-
 	svec3<N> dirs = DirBetweenLines(va, vb, start, end);
 
 	float lens[N];
 	dirs.LengthSqr(lens);
 
 	for (size_t i = 0; i < N; i++)
-		if (lens[i] <= radiusSqr)
+		if (lens[i] <= radius[i] * radius[i])
 			flags |= (1 << i);
 
 	return flags;
