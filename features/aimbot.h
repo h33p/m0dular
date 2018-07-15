@@ -16,7 +16,7 @@ struct Target
 
 namespace Aimbot
 {
-	Target RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime);
+	Target RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime, bool hitboxList[MAX_HITBOXES]);
 }
 
 #endif

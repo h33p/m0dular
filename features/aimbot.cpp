@@ -47,9 +47,9 @@ static bool CompareDataRage(Target* target, LocalPlayer* localPlayer, int out, v
 }
 
 bool doMultipoint = true;
-float pointScaleVal = 0.8f;
+float pointScaleVal = 0.9f;
 
-static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer* localPlayer)
+static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES])
 {
 	fovs[id] = 1000.f;
 	tid = id;
@@ -57,6 +57,9 @@ static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer
 	HitboxList& hitboxes = players->hitboxes[id];
 
 	for (size_t i = 0; i < MAX_HITBOXES; i++) {
+
+		if (!hitboxList[i])
+			continue;
 
 		float fov = 0.f;
 
@@ -98,13 +101,13 @@ static int ScanHitboxes(Target* target, Players* players, size_t id, LocalPlayer
 	return 0;
 }
 
-static int LoopPlayers(Target* target, Players* players, size_t count, LocalPlayer* localPlayer, float oldestTime)
+static int LoopPlayers(Target* target, Players* players, size_t count, LocalPlayer* localPlayer, float oldestTime, bool hitboxList[MAX_HITBOXES])
 {
 	int ret = 0;
 
 	for (size_t i = 0; i < count; i++) {
 		if (players->flags[i] & Flags::HITBOXES_UPDATED && ~players->flags[i] & Flags::FRIENDLY && players->fov[i] - 4.f < target->fov) {
-			if (ScanHitboxes(target, players, i, localPlayer)) {
+			if (ScanHitboxes(target, players, i, localPlayer, hitboxList)) {
 				target->id = i;
 				ret = 1;
 			}
@@ -114,7 +117,7 @@ static int LoopPlayers(Target* target, Players* players, size_t count, LocalPlay
     return ret;
 }
 
-static void FindBestTarget(Target* target, HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime)
+static void FindBestTarget(Target* target, HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime, bool hitboxList[MAX_HITBOXES])
 {
 
 	char backtrackMask[MAX_PLAYERS];
@@ -131,7 +134,7 @@ static void FindBestTarget(Target* target, HistoryList<Players, BACKTRACK_TICKS>
 		if (!Tracing::BacktrackPlayers(&players, prevPlayers, backtrackMask))
 			break;
 
-		LoopPlayers(&t2, &players, count, localPlayer, oldestTime);
+		LoopPlayers(&t2, &players, count, localPlayer, oldestTime, hitboxList);
 		if (t2.id >= 0 && t2.fov < lowestFov) {
 			lowestFov = t2.fov;
 			t2.backTick = i;
@@ -141,12 +144,12 @@ static void FindBestTarget(Target* target, HistoryList<Players, BACKTRACK_TICKS>
 	}
 }
 
-Target Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime)
+Target Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, LocalPlayer* localPlayer, float oldestTime, bool hitboxList[MAX_HITBOXES])
 {
 	Target target;
 	shootAngles = localPlayer->angles + localPlayer->aimOffset;
 
-	FindBestTarget(&target, track, localPlayer, oldestTime);
+	FindBestTarget(&target, track, localPlayer, oldestTime, hitboxList);
 
 	if (target.id >= 0) {
 		vec3_t angles = (target.targetVec - localPlayer->eyePos).GetAngles(true);
