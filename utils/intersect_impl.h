@@ -90,7 +90,7 @@ static vec3soa<float, Y> DirBetweenLines(vec3soa<float, Y>& __restrict va, vec3s
 }
 
 template<size_t Y>
-unsigned int CapsuleCollider::IntersectSOA(vec3soa<float, Y>& __restrict a, vec3soa<float, Y>& __restrict b)
+unsigned int CapsuleCollider::IntersectSOA(vec3soa<float, Y>& __restrict a, vec3soa<float, Y>& __restrict b, vec3soa<float, Y>* __restrict out)
 {
 	unsigned int flags = 0;
     svec3<Y> soaStart, soaEnd;
@@ -99,6 +99,9 @@ unsigned int CapsuleCollider::IntersectSOA(vec3soa<float, Y>& __restrict a, vec3
 	float radiusSqr = radius * radius;
 
 	vec3soa<float, Y> dirs = DirBetweenLines(a, b, soaStart, soaEnd);
+
+	if (out)
+		*out = dirs;
 
 	float lens[Y];
 	dirs.LengthSqr(lens);
@@ -110,15 +113,18 @@ unsigned int CapsuleCollider::IntersectSOA(vec3soa<float, Y>& __restrict a, vec3
 	return flags;
 }
 
-template unsigned int CapsuleCollider::IntersectSOA(nvec3& a, nvec3& b);
+template unsigned int CapsuleCollider::IntersectSOA(nvec3& __restrict a, nvec3& __restrict b, nvec3* __restrict out);
 
 template <size_t N>
-unsigned int CapsuleColliderSOA<N>::Intersect(vec3_t a, vec3_t b)
+unsigned int CapsuleColliderSOA<N>::Intersect(vec3_t a, vec3_t b, svec3<N>* out)
 {
 	unsigned int flags = 0;
 	svec3<N> va = a, vb = b;
 
 	svec3<N> dirs = DirBetweenLines(va, vb, start, end);
+
+	if (out)
+		*out = dirs;
 
 	float lens[N];
 	dirs.LengthSqr(lens);

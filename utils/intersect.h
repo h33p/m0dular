@@ -12,7 +12,7 @@ struct CapsuleCollider
 	bool Intersect(vec3_t a, vec3_t b);
 
 	template<size_t Y>
-	unsigned int IntersectSOA(vec3soa<float, Y>& __restrict a, vec3soa<float, Y>& __restrict);
+	unsigned int IntersectSOA(vec3soa<float, Y>& __restrict a, vec3soa<float, Y>& __restrict, svec3<Y>* __restrict out = nullptr);
 };
 
 template <size_t N>
@@ -21,7 +21,7 @@ struct CapsuleColliderSOA
 	svec3<N> start, end;
 	float radius[N];
 
-	unsigned int Intersect(vec3_t a, vec3_t b);
+	unsigned int Intersect(vec3_t a, vec3_t b, svec3<N>* out = nullptr);
 };
 
 #endif
