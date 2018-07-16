@@ -89,7 +89,7 @@ inline constexpr T x64x32(T x64, T x32)
 #endif
 
 #ifdef _MSC_VER
-#define FRAME_POINTER() *((void**)_AddressOfReturnAddress() - 1)
+#define FRAME_POINTER() (void*)((void**)_AddressOfReturnAddress() - 1)
 #else
 #define FRAME_POINTER() __builtin_frame_address(0)
 #endif
