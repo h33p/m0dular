@@ -106,6 +106,7 @@ LocalPlayer
 	vec3_t eyePos;
 	vec3_t angles;
 	vec3_t aimOffset;
+	vec3_t origin;
 	vec3_t velocity;
 	float time;
 	int weaponAmmo;
