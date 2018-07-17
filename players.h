@@ -75,6 +75,7 @@ Players
 	nvec3 boundsStart[PLAYER_CHUNKS];
 	nvec3 boundsEnd[PLAYER_CHUNKS];
 	vec3_t origin[MAX_PLAYERS];
+	vec3_t eyePos[MAX_PLAYERS];
 	vec3_t velocity[MAX_PLAYERS];
 	CapsuleColliderSOA<SIMD_COUNT> colliders[MAX_PLAYERS][NumOfSIMD(MAX_HITBOXES)];
 	HitboxList hitboxes[MAX_PLAYERS];
