@@ -1,6 +1,11 @@
 #ifndef HISTORY_LIST_H
 #define HISTORY_LIST_H
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
+#include <math.h>
+
 template <typename T, size_t C>
 struct HistoryList
 {
@@ -32,9 +37,14 @@ struct HistoryList
 	}
 
 	//id 0 is the current item, and higher up go previous items
-	auto& GetLastItem(size_t id)
+	inline auto& GetLastItem(size_t id)
 	{
 		return list[(counter - id) % C];
+	}
+
+	inline auto& operator[](size_t id)
+	{
+		return GetLastItem(id);
 	}
 
 	size_t Count()

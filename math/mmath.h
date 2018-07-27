@@ -87,14 +87,15 @@ constexpr int NumOfSIMD(const int val)
 
 #include <type_traits>
 
-constexpr size_t PopCnt(size_t inp)
+template<typename T>
+constexpr T PopCnt(T inp)
 {
 #ifdef __GNUC__
 	if (sizeof(inp) == 8)
 		return __builtin_popcountll(inp);
 	return __builtin_popcount(inp);
 #else
-	int i = 0;
+	T i = 0;
 	for (i = 0; i < sizeof(inp) * 8; i++)
 		if (~inp & (1 << i))
 			break;

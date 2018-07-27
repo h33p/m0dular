@@ -180,5 +180,25 @@ GetVectors(VEC_TYPE& __restrict forward, VEC_TYPE& __restrict right, VEC_TYPE& _
 	return *this;
 }
 
+template<size_t dim, size_t Q = N>
+inline typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>&>::type
+Rotate(T angle)
+{
+	T s, c;
+	s = std::sin(angle);
+	c = std::cos(angle);
+
+	constexpr size_t iX = (dim + 2) % 3;
+	constexpr size_t iY = (dim + 1) % 3;
+
+	T xn = v[iX] * c - v[iY] * s;
+	T yn = v[iX] * s - v[iY] * c;
+
+	v[iX] = xn;
+	v[iY] = yn;
+
+	return *this;
+}
+
 #undef VEC_TYPE
 #endif
