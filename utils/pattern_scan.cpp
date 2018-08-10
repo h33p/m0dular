@@ -21,7 +21,7 @@ struct pOperation
 	{
 		switch(op) {
 		  case 0:
-			  return *(uintptr_t*)(addr + offset);
+			  return Read<uintptr_t>(addr + offset);
 		  case 1:
 			  return addr + offset;
 		  case 2:
@@ -29,7 +29,10 @@ struct pOperation
 		}
 		return addr;
 	}
+
 };
+
+uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_t* data, uintptr_t* mask);
 
 static void ParsePattern(const char* pattern, short*& patternBytes, size_t& length, std::vector<pOperation>& operations)
 {
@@ -151,16 +154,7 @@ uintptr_t PatternScan::FindPattern(const char* pattern, uintptr_t start, uintptr
 	ProduceScanData(patternBytes, data, mask, length);
 	delete[] patternBytes;
 
-	for (uintptr_t i = start; i < end - length; i++) {
-		bool miss = false;
-		for (uintptr_t o = 0; o < length && !miss; o++)
-			miss = data[o] ^ (*(uintptr_t*)(i + o * sizeof(uintptr_t)) | mask[o]);
-
-		if (!miss) {
-			addr = i;
-			break;
-		}
-	}
+	addr = ScanPattern(start, end, length, data, mask);
 
 	if (addr)
 		for (auto& i : operations)
@@ -176,3 +170,19 @@ uintptr_t PatternScan::FindPattern(const char* __restrict pattern, const char* _
 	ModuleInfo info = Handles::GetModuleInfo(module);
 	return FindPattern(pattern, info.address, info.address + info.size);
 }
+
+#ifndef PATTERN_SCAN_CUSTOM_SCAN
+uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_t* data, uintptr_t* mask)
+{
+	for (uintptr_t i = start; i < end - length; i++) {
+		bool miss = false;
+		for (uintptr_t o = 0; o < length && !miss; o++)
+			miss = data[o] ^ (Read<uintptr_t>(i + o * sizeof(uintptr_t)) | mask[o]);
+
+		if (!miss)
+			return i;
+	}
+
+	return 0;
+}
+#endif
