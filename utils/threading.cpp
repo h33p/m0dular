@@ -76,21 +76,22 @@ void Threading::EndThreads()
 	for (unsigned int i = 0; i < numThreads; i++)
 		threads[i].shouldQuit = true;
 
-	for (int o = 0; o < 2; o++)
-		for (unsigned int i = 0; i < numThreads; i++) {
+	for (unsigned int i = 0; i < numThreads; i++)
+		threads[i].jobs->quit = true;
+
+	for (int o = 0; o < 4; o++)
+		for (unsigned int i = 0; i < numThreads; i++)
 			threads[i].jobs->sem.Post();
-			threads[i].jobs->quit = true;
-			threads[i].jobs->lock.unlock();
-		}
 
 	for (size_t i = 0; i < numThreads; i++) {
 #if defined(__linux__) || defined(__APPLE__)
-		pthread_cancel(*(pthread_t*)threads[i].handle);
 		void* ret = nullptr;
 		pthread_join(*(pthread_t*)threads[i].handle, &ret);
 #else
 		WaitForSingleObject(*(HANDLE*)threads[i].handle, INFINITE);
 #endif
+		delete threads[i].jLock;
+		threads[i].jLock = nullptr;
 		free(threads[i].handle);
 	}
 	free(threads);
