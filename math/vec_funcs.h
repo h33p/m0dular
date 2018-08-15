@@ -188,11 +188,11 @@ Rotate(T angle)
 	s = std::sin(angle);
 	c = std::cos(angle);
 
-	constexpr size_t iX = (dim + 2) % 3;
-	constexpr size_t iY = (dim + 1) % 3;
+	constexpr size_t iX = (dim + 1) % 3;
+	constexpr size_t iY = (dim + 2) % 3;
 
 	T xn = v[iX] * c - v[iY] * s;
-	T yn = v[iX] * s - v[iY] * c;
+	T yn = v[iX] * s + v[iY] * c;
 
 	v[iX] = xn;
 	v[iY] = yn;

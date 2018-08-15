@@ -25,7 +25,7 @@ struct HistoryList
 		counter--;
 	}
 
-	auto& Push(T& item)
+	auto& Push(const T& item)
 	{
 		list[++counter % C] = item;
 		return list[counter % C];

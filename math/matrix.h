@@ -178,8 +178,7 @@ struct matrix
 	inline auto WorldToScreen(T& vec, vecb<float, 2> screen, bool& status)
 	{
 		auto out = Vector3Transform(vec);
-		if (out[0] <= screen[0] && out[1] <= screen[1])
-		{
+		if (out[0] <= screen[0] && out[1] <= screen[1]) {
 			out[0] = screen[0] * 0.5f + out[0] * screen[0] * 0.5f;
 			out[1] = screen[1] * 0.5f - out[1] * screen[1] * 0.5f;
 
