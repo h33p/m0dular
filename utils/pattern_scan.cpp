@@ -118,6 +118,7 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 	length = idx;
 }
 
+//Optimize the parsed pattern into larger long sized values to be compared. This way we will utilize the full potential of the CPUs native register size when reading the memory. Going wider (into SIMD) is not worth it, because if the pattern does not match, it will usually be within the first 4-8 instructions.
 static void ProduceScanData(short* parsedData, uintptr_t*& data, uintptr_t*& mask, size_t& size)
 {
 	constexpr size_t iSize = sizeof(long);
@@ -177,6 +178,7 @@ uintptr_t PatternScan::FindPattern(const char* __restrict pattern, const char* _
 
 #ifndef PATTERN_SCAN_CUSTOM_SCAN
 #ifdef PATTERN_SCAN_PAGE_SCAN
+//Page scanning is very useful in instances where memory reads have high latency. It can be hundreds of times faster than reading long-by-long
 uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_t* data, uintptr_t* mask)
 {
 	uintptr_t llength = sizeof(long) * length;
@@ -188,7 +190,7 @@ uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_
 		for (uintptr_t u = start & 0xfff; u < 0x1000; u++) {
 			bool miss = false;
 			for (uintptr_t o = 0; o < length && !miss; o++)
-				miss = data[o] ^ (*(uintptr_t*)(page + u + o * sizeof(uintptr_t)) | mask[o]);
+				miss = data[o] ^ (*(uintptr_t*)(buf + u + o * sizeof(uintptr_t)) | mask[o]);
 
 			if (!miss)
 				return u + (i & ~0xfff);
