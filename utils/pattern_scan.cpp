@@ -184,17 +184,20 @@ uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_
 	uintptr_t llength = sizeof(long) * length;
 	char* buf = (char*)alloca(0x1000 + llength);
 	char* page = buf + llength;
+	//On the first round, we do not want to scan the part where a part of the previous page buffer would be copied on - since we have no "previous page"
+	uintptr_t sOffset = llength;
 	for (uintptr_t i = start; i < end - llength; i += 0x1000) {
 		memcpy(buf, buf + 0x1000, llength);
 		ReadArr(i & ~0xfff, page, 0x1000);
-		for (uintptr_t u = start & 0xfff; u < 0x1000; u++) {
+		for (uintptr_t u = (start & 0xfff) + sOffset; u < 0x1000; u++) {
 			bool miss = false;
 			for (uintptr_t o = 0; o < length && !miss; o++)
 				miss = data[o] ^ (*(uintptr_t*)(buf + u + o * sizeof(uintptr_t)) | mask[o]);
 
 			if (!miss)
-				return u + (i & ~0xfff);
+				return u + (i & ~0xfff) - llength;
 		}
+		sOffset = 0;
 	}
 
 	return 0;
