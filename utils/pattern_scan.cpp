@@ -26,6 +26,8 @@ struct pOperation
 			  return addr + offset;
 		  case 2:
 			  return GetAbsoluteAddress(addr, offset, v1);
+		  case 3:
+			  return Read<unsigned int>(addr + offset);
 		}
 		return addr;
 	}
@@ -80,25 +82,27 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 			op.offset = initDerefIdx - relStartIdx;
 			op.v1 = idx - relStartIdx;
 
-		} else if (*p == '*') {
+		} else if (*p == '*' || *p == '^') {
 			assert(!derefDone);
 			derefDone = true;
 
 			initDerefIdx = idx;
 
 			if (!inRelDeref)
-				operations.emplace_back(pOperation(0, idx));
+			operations.emplace_back(pOperation((*p == '*') ? 0 : 3, idx));
 			p++;
 
-			while (*p == '+' || *p == '-' || *p == '*') {
+			while (*p == '+' || *p == '-' || *p == '*' || *p == '^') {
 				if (*p == '*')
 					operations.emplace_back(pOperation(*p++ == '*' ? 0 : 1));
-			    else {
+				if (*p == '*')
+					operations.emplace_back(pOperation(*p++ == '^' ? 3 : 1));
+				else {
 					pOperation op = pOperation();
 					if (*p == '+' || *p == '-')
 						op.offset = strtol(p, &p, 10);
-					op.op = (*p == '*') ? 0 : 1;
-					if (*p == '*')
+					op.op = (*p == '*') ? 0 : ((*p == '^') ? 3 : 1);
+					if (*p == '*' || *p == '^')
 						p++;
 					operations.emplace_back(op);
 				}
@@ -172,9 +176,32 @@ uintptr_t PatternScan::FindPattern(const char* __restrict pattern, const char* _
 }
 
 #ifndef PATTERN_SCAN_CUSTOM_SCAN
+#ifdef PATTERN_SCAN_PAGE_SCAN
 uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_t* data, uintptr_t* mask)
 {
-	for (uintptr_t i = start; i < end - length; i++) {
+	uintptr_t llength = sizeof(long) * length;
+	char* buf = (char*)alloca(0x1000 + llength);
+	char* page = buf + llength;
+	for (uintptr_t i = start; i < end - llength; i += 0x1000) {
+		memcpy(buf, buf + 0x1000, llength);
+		ReadArr(i & ~0xfff, page, 0x1000);
+		for (uintptr_t u = start & 0xfff; u < 0x1000; u++) {
+			bool miss = false;
+			for (uintptr_t o = 0; o < length && !miss; o++)
+				miss = data[o] ^ (*(uintptr_t*)(page + u + o * sizeof(uintptr_t)) | mask[o]);
+
+			if (!miss)
+				return u + (i & ~0xfff);
+		}
+	}
+
+	return 0;
+}
+#else
+uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_t* data, uintptr_t* mask)
+{
+	uintptr_t llength = sizeof(long) * length;
+	for (uintptr_t i = start; i < end - llength; i++) {
 		bool miss = false;
 		for (uintptr_t o = 0; o < length && !miss; o++)
 			miss = data[o] ^ (Read<uintptr_t>(i + o * sizeof(uintptr_t)) | mask[o]);
@@ -185,4 +212,5 @@ uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_
 
 	return 0;
 }
+#endif
 #endif

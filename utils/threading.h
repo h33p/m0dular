@@ -87,17 +87,12 @@ struct LList
 			return nullptr;
 		}
 		lock.lock();
-		if (quit) {
-			lock.unlock();
-			sem.Post();
-			return nullptr;
-		}
-		if (lck)
-			lck->lock();
 		if (!front) {
 			lock.unlock();
 			return nullptr;
 		}
+		if (lck)
+			lck->lock();
 		struct LEntry* entry = front;
 		front = entry->prev;
 		if (front)
