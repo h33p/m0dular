@@ -1,5 +1,5 @@
-#ifndef MUTEX_H
-#define MUTEX_H
+#ifndef SHARED_MUTEX_H
+#define SHARED_MUTEX_H
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <pthread.h>
@@ -8,17 +8,19 @@
 #include <windows.h>
 #endif
 
-class Mutex {
+class SharedMutex {
   public:
-	Mutex();
-	~Mutex();
-	void lock();
-	void unlock();
+	SharedMutex();
+	~SharedMutex();
+	void rlock();
+	void runlock();
+	void wlock();
+	void wunlock();
   private:
 #if defined(__linux__) || defined(__APPLE__)
-	pthread_mutex_t lck;
+	pthread_rwlock_t lock;
 #else
-	CRITICAL_SECTION lck;
+	SRWLOCK lock;
 #endif
 };
 

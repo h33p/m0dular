@@ -6,13 +6,12 @@ static Semaphore newJobSem;
 
 static LList<struct Job> jobs;
 
-struct Job* Threading::_QueueJob(JobFn function, void* data, bool ref)
+uint64_t Threading::_QueueJob(JobFn function, void* data, bool ref)
 {
-	struct Job* job = new Job();
-	job->args = data;
-	job->function = function;
-	job->flags.store(0);
-	job->ref = ref;
+	Job job;
+	job.args = data;
+	job.function = function;
+	job.ref = ref;
 	return jobs.Enqueue(job);
 }
 
@@ -20,16 +19,14 @@ static void* __stdcall ThreadLoop(void* t)
 {
 	struct JobThread* thread = (struct JobThread*)t;
 
-	struct Job* job = nullptr;
+	struct Job job;
 	thread->isRunning = true;
 	while (!thread->shouldQuit) {
-		if (job) {
+		if (job.id ^ ~0ull) {
 			thread->queueEmpty = false;
-			job->flags |= IS_RUNNING;
-			job->function(job->args);
-			if (!job->ref)
-				free(job->args);
-			job->flags |= IS_FINISHED;
+			job.function(job.args);
+			if (!job.ref)
+				free(job.args);
 		} else
 			thread->queueEmpty = true;
 		struct LList<struct Job>* tJobs = thread->jobs;

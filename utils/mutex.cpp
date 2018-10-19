@@ -3,61 +3,41 @@
 #if defined(__linux__) || defined(__APPLE__)
 #include <pthread.h>
 
-class Mutex::Impl {
-  public:
-	Impl() {
-		int ret = pthread_mutex_init(&cs, nullptr);
-		if (ret) {
-			throw;
-		}
-  }
-
-  ~Impl() {
+Mutex::Mutex() {
+	int ret = pthread_mutex_init(&lck, nullptr);
+	if (ret) {
+		throw;
 	}
+}
 
-	void lock() {
-		pthread_mutex_lock(&cs);
-	}
+Mutex::~Mutex() {
+	pthread_mutex_destroy(&lck);
+}
 
-	void unlock() {
-  	pthread_mutex_unlock(&cs);
-	}
+void Mutex::lock() {
+	pthread_mutex_lock(&lck);
+}
 
-  private:
-	pthread_mutex_t cs;
-};
+void Mutex::unlock() {
+	pthread_mutex_unlock(&lck);
+}
 
-Mutex::Mutex() : impl(new Mutex::Impl()) {}
-Mutex::~Mutex() { delete impl; }
-void Mutex::lock() { impl->lock(); }
-void Mutex::unlock() { impl->unlock(); }
 #else
 #include <windows.h>
 
-class Mutex::Impl {
-  public:
-	Impl() {
-		::InitializeCriticalSection(&cs);
-  }
+Mutex::Mutex() {
+	::InitializeCriticalSection(&lck);
+}
 
-  ~Impl() {
-  	::DeleteCriticalSection(&cs);
-	}
+Mutex::~Mutex() {
+	::DeleteCriticalSection(&lck);
+}
 
-	void lock() {
-  	::EnterCriticalSection(&cs);
-	}
+void Mutex::lock() {
+	::EnterCriticalSection(&lck);
+}
 
-	void unlock() {
-  	::LeaveCriticalSection(&cs);
-	}
-
-  private:
-	CRITICAL_SECTION cs;
-};
-
-Mutex::Mutex() : impl(new Mutex::Impl()) {}
-Mutex::~Mutex() { delete impl; }
-void Mutex::lock() { impl->lock(); }
-void Mutex::unlock() { impl->unlock(); }
+void Mutex::unlock() {
+	::LeaveCriticalSection(&lck);
+}
 #endif
