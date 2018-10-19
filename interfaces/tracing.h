@@ -21,6 +21,7 @@ namespace Tracing
 	  due to the breaking of lag compensation)
 	*/
 	bool BacktrackPlayers(Players* curPlayers, Players* prevPlayers, char backtrackMask[MAX_PLAYERS]);
+	bool VerifyTarget(Players* players, int id, char backtrackMask[MAX_PLAYERS]);
 }
 
 #endif

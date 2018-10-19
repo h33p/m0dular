@@ -99,6 +99,17 @@ Players
 		memcpy(this, &o, sizeof(Players));
 		return *this;
 	}
+
+	int Resort(const Players& target, int id)
+	{
+		int uid = unsortIDs[id];
+		if (uid >= 0 && uid < MAX_PLAYERS) {
+			int sid = target.sortIDs[uid];
+			if (sid >= 0 && sid < MAX_PLAYERS)
+				return sid;
+		}
+		return MAX_PLAYERS;
+	}
 };
 
 struct alignas(SIMD_COUNT * 4)

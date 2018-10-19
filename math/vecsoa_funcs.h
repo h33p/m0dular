@@ -65,7 +65,7 @@ inline void Dot(SOA_TYPE& ov, T val[Y])
 	nv.AddUp<D>();
 
 	for (size_t i = 0; i < Y; i++)
-		val[i] = nv.x[i];
+		val[i] = nv[0][i];
 }
 
 	template <size_t D>
