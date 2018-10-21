@@ -76,7 +76,7 @@ struct LList
 	uint64_t Enqueue(const T& data) {
 		lock.lock();
 		idx_t entry = entries.Alloc();
-		entries[entry] = (LEntry){ data, 0, back };
+		entries[entry] = { data, 0, back };
 		entries[entry].entry.id = lastID;
 		uint64_t id = lastID++;
 		if (back)
