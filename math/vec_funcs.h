@@ -11,7 +11,7 @@ inline auto& Assign(T val)
 
 
 template <size_t D>
-inline T Dot(VEC_TYPE& o)
+inline T Dot(const VEC_TYPE& o) const
 {
 	T val = 0;
 	for (size_t i = 0; i < D; i++)
@@ -20,13 +20,13 @@ inline T Dot(VEC_TYPE& o)
 }
 
 template <size_t D>
-inline T LengthSqr()
+inline T LengthSqr() const
 {
 	return Dot<D>(*this);
 }
 
 template <size_t D>
-inline T Length()
+inline T Length() const
 {
 	return sqrt(Dot<D>(*this));
 }
@@ -39,27 +39,27 @@ inline auto& NormalizeAngles(T start, T end)
 	return *this;
 }
 
-inline T Dot(VEC_TYPE& o)
+inline T Dot(const VEC_TYPE& o) const
 {
 	return Dot<N>(o);
 }
 
-inline T Dot(T* o)
+inline T Dot(const T* o) const
 {
-	return Dot(*(VEC_TYPE*)o);
+	return Dot(*(const VEC_TYPE*)o);
 }
 
-inline T LengthSqr()
+inline T LengthSqr() const
 {
 	return LengthSqr<N>();
 }
 
-inline T Length()
+inline T Length() const
 {
 	return Length<N>();
 }
 
-auto Normalized()
+auto Normalized() const
 {
 	auto val = *this;
 	float l = val.Length();
@@ -74,17 +74,17 @@ auto& Normalize()
 }
 
 template <size_t D>
-T DistTo(VEC_TYPE& o)
+T DistTo(const VEC_TYPE& o) const
 {
 	return (*this - o).template Length<D>();
 }
 
-T DistTo(VEC_TYPE& o)
+T DistTo(const VEC_TYPE& o) const
 {
 	return DistTo<N>(o);
 }
 
-auto DirToRay(VEC_TYPE& a, VEC_TYPE& b)
+auto DirToRay(const VEC_TYPE& a, const VEC_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
@@ -94,7 +94,7 @@ auto DirToRay(VEC_TYPE& a, VEC_TYPE& b)
 	return a + t * d;
 }
 
-auto DirToLine(VEC_TYPE& a, VEC_TYPE& b)
+auto DirToLine(const VEC_TYPE& a, const VEC_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
@@ -106,7 +106,7 @@ auto DirToLine(VEC_TYPE& a, VEC_TYPE& b)
 
 template<size_t Q = N>
 inline typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>>::type
-Cross(VEC_TYPE& o)
+Cross(const VEC_TYPE& o) const
 {
 	VEC_TYPE<T, 3> ret;
 	ret[0] = v[1] * o[2] - v[2] * o[1];
@@ -136,7 +136,7 @@ ToAngles()
 
 template<size_t Q = N>
 inline typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>>::type
-GetAngles(bool toDegrees = false)
+GetAngles(bool toDegrees = false) const
 {
 	auto ret = *this;
 	ret.ToAngles();

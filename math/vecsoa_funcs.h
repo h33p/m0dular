@@ -59,7 +59,7 @@ inline auto& AddUp()
 
 //Constant array functions
 template <size_t D>
-inline void Dot(SOA_TYPE& ov, T val[Y])
+inline void Dot(const SOA_TYPE& ov, T val[Y]) const
 {
 	SOA_TYPE nv = *this * ov;
 	nv.AddUp<D>();
@@ -68,25 +68,25 @@ inline void Dot(SOA_TYPE& ov, T val[Y])
 		val[i] = nv[0][i];
 }
 
-	template <size_t D>
-inline void LengthSqr(T val[Y])
+template <size_t D>
+inline void LengthSqr(T val[Y]) const
 {
 	Dot<D>(*this, val);
 }
 
-	template <size_t D>
-inline void Length(T val[Y])
+template <size_t D>
+inline void Length(T val[Y]) const
 {
 	Dot<D>(*this, val);
 	VSqrt<T, Y>(val);
 }
 
-inline void Dot(SOA_TYPE& o, T val[Y])
+inline void Dot(const SOA_TYPE& o, T val[Y]) const
 {
 	Dot<X>(o, val);
 }
 
-inline void LengthSqr(T val[Y])
+inline void LengthSqr(T val[Y]) const
 {
 	LengthSqr<X>(val);
 }
@@ -97,19 +97,19 @@ inline void Length(T val[Y])
 }
 
 template <size_t D>
-inline void DistTo(SOA_TYPE& o, T val[Y])
+inline void DistTo(const SOA_TYPE& o, T val[Y]) const
 {
 	(*this - o).template Length<D>(val);
 }
 
-inline void DistTo(SOA_TYPE& o, T val[Y])
+inline void DistTo(const SOA_TYPE& o, T val[Y]) const
 {
 	DistTo<X>(o, val);
 }
 
 //Pointer returning functions
 template <size_t D>
-inline T* Dot(SOA_TYPE& ov)
+inline const T* Dot(const SOA_TYPE& ov) const
 {
 	T val[Y];
 	Dot<D>(ov, val);
@@ -117,46 +117,46 @@ inline T* Dot(SOA_TYPE& ov)
 }
 
 template <size_t D>
-inline T* LengthSqr()
+inline const T* LengthSqr() const
 {
 	return Dot<D>(*this);
 }
 
 template <size_t D>
-inline T* Length()
+inline const T* Length() const
 {
 	T* val = Dot<D>(*this);
 	VSqrt<X>(val);
 	return val;
 }
 
-inline T* Dot(SOA_TYPE& o)
+inline const T* Dot(const SOA_TYPE& o) const
 {
 	return Dot<X>(o);
 }
 
-inline T* LengthSqr()
+inline const T* LengthSqr() const
 {
 	return LengthSqr<X>();
 }
 
-inline T* Length()
+inline const T* Length() const
 {
 	return Length<X>();
 }
 
 template <size_t D>
-T* DistTo(SOA_TYPE& o)
+inline const T* DistTo(const SOA_TYPE& o) const
 {
 	return (*this - o).template Length<D>();
 }
 
-T* DistTo(SOA_TYPE& o)
+inline const T* DistTo(const SOA_TYPE& o) const
 {
 	return DistTo<X>(o);
 }
 
-auto DirToRay(SOA_TYPE& a, SOA_TYPE& b)
+auto DirToRay(const SOA_TYPE& a, const SOA_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
@@ -171,7 +171,7 @@ auto DirToRay(SOA_TYPE& a, SOA_TYPE& b)
 	return a + d * t;
 }
 
-auto DirToLine(SOA_TYPE& a, SOA_TYPE& b)
+auto DirToLine(const SOA_TYPE& a, const SOA_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
@@ -186,7 +186,7 @@ auto DirToLine(SOA_TYPE& a, SOA_TYPE& b)
 	return a + d * t;
 }
 
-auto Normalized()
+auto Normalized() const
 {
 	auto val = *this;
 	float l[Y];
@@ -203,7 +203,7 @@ void Normalize()
 }
 
 template<typename Q>
-inline void TransformInPlace(Q* inp)
+inline void TransformInPlace(const Q* inp)
 {
 	Q dot[Y];
 	for (size_t o = 0; o < Y; o++)
@@ -212,14 +212,14 @@ inline void TransformInPlace(Q* inp)
 }
 
 template<typename Q>
-inline auto Transform(Q* inp)
+inline auto Transform(const Q* inp) const
 {
 	auto ret = *this;
 	ret.TransformInPlace(inp);
 	return ret;
 }
 
-inline auto& AssignCol(int col, vecb<T, Y> vec)
+inline auto& AssignCol(int col, const vecb<T, Y>& vec)
 {
 	for (size_t i = 0; i < Y; i++)
 		v[col][i] = vec[i];
@@ -227,9 +227,9 @@ inline auto& AssignCol(int col, vecb<T, Y> vec)
 	return *this;
 }
 
-inline auto& AssignCol(int col, vecp<T, Y> vec)
+inline auto& AssignCol(int col, const vecp<T, Y>& vec)
 {
-	return AssignCol(col, (vecb<T, Y>)vec);
+	return AssignCol(col, (const vecb<T, Y>&)vec);
 }
 
 inline auto& AssignCol(int col, T val)
@@ -239,7 +239,7 @@ inline auto& AssignCol(int col, T val)
 }
 
 
-inline auto& MulCol(int col, vecb<T, Y> vec)
+inline auto& MulCol(int col, const vecb<T, Y>& vec)
 {
 	for (size_t i = 0; i < Y; i++)
 		v[col][i] *= vec[i];
@@ -247,7 +247,7 @@ inline auto& MulCol(int col, vecb<T, Y> vec)
 	return *this;
 }
 
-inline auto& MulCol(int col, vecp<T, Y> vec)
+inline auto& MulCol(int col, const vecp<T, Y>& vec)
 {
 	return MulCol(col, (vecb<T, Y>)vec);
 }
@@ -258,14 +258,14 @@ inline auto& MulCol(int col, T val)
 		v[col][i] *= val;
 }
 
-inline auto& MulCol(int col, T* val)
+inline auto& MulCol(int col, const T* val)
 {
 	for (int i = 0; i < Y; i++)
 		v[col][i] *= val[i];
 }
 
 
-inline auto& AddCol(int col, vecb<T, Y> vec)
+inline auto& AddCol(int col, const vecb<T, Y>& vec)
 {
 	for (size_t i = 0; i < Y; i++)
 		v[col][i] += vec[i];
@@ -273,7 +273,7 @@ inline auto& AddCol(int col, vecb<T, Y> vec)
 	return *this;
 }
 
-inline auto& AddCol(int col, vecp<T, Y> vec)
+inline auto& AddCol(int col, const vecp<T, Y>& vec)
 {
 	return MulCol(col, (vecb<T, Y>)vec);
 }
@@ -283,7 +283,7 @@ inline auto& AddCol(int col, T val)
 	for (int i = 0; i < Y; i++)
 		v[col][i] *= val;
 }
-inline auto& AddCol(int col, T* val)
+inline auto& AddCol(int col, const T* val)
 {
 	for (int i = 0; i < Y; i++)
 		v[col][i] *= val[i];

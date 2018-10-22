@@ -147,7 +147,7 @@ namespace Threading
 	extern unsigned int numThreads;
 	uint64_t _QueueJob(JobFn function, void* data, bool ref = false);
 	void InitThreads();
-	void EndThreads();
+	int EndThreads();
 	void FinishQueue();
 	JobThread* BindThread(LList<struct Job>* jobsQueue);
 	void UnbindThread(LList<struct Job>* jobsQueue);

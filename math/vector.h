@@ -82,8 +82,7 @@ struct vecb
 {
 	T v[N];
 
-	DEFINE_VEC_OPS(vecb,);
-	DEFINE_VEC_OPS(vecb,const);
+	DEFINE_VEC_OPS(vecb);
 
 #define VEC_TYPE vecb
 #include "vec_funcs.h"
@@ -143,8 +142,7 @@ struct vecp
 		T v[4];
 	};
 
-	DEFINE_VEC_OPS(vecp,);
-	DEFINE_VEC_OPS(vecp,const);
+	DEFINE_VEC_OPS(vecp);
 
 #define VEC_TYPE vecp
 #include "vec_funcs.h"
@@ -218,8 +216,7 @@ struct vec3soa
 		DEFINE_SOA_ACCESSOR;
 	};
 
-	DEFINE_SOA_OPS(vec3soa,);
-	DEFINE_SOA_OPS(vec3soa,const);
+	DEFINE_SOA_OPS(vec3soa);
 
 #define SOA_TYPE vec3soa
 #include "vecsoa_funcs.h"
@@ -285,8 +282,7 @@ struct vecSoa
 		DEFINE_SOA_ACCESSOR;
 	};
 
-	DEFINE_SOA_OPS(vecSoa,);
-	DEFINE_SOA_OPS(vecSoa,const);
+	DEFINE_SOA_OPS(vecSoa);
 
 #define SOA_TYPE vecSoa
 #include "vecsoa_funcs.h"

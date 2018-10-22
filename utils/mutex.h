@@ -14,7 +14,7 @@ class Mutex {
 	~Mutex();
 	void lock();
 	void unlock();
-  private:
+	//private:
 #if defined(__linux__) || defined(__APPLE__)
 	pthread_mutex_t lck;
 #else

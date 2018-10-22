@@ -1,8 +1,4 @@
 #include "threading.h"
-//#include <thread>
-
-//static std::condition_variable newJobNotify;
-static Semaphore newJobSem;
 
 static LList<struct Job> jobs;
 
@@ -65,10 +61,12 @@ void Threading::InitThreads()
 		InitThread(threads + i, i);
 }
 
-void Threading::EndThreads()
+int Threading::EndThreads()
 {
+	int ret = 0;
+
 	if (!threads)
-		return;
+		return ret;
 
 	for (unsigned int i = 0; i < numThreads; i++)
 		threads[i].shouldQuit = true;
@@ -85,7 +83,9 @@ void Threading::EndThreads()
 		void* ret = nullptr;
 		pthread_join(*(pthread_t*)threads[i].handle, &ret);
 #else
-		WaitForSingleObject(*(HANDLE*)threads[i].handle, INFINITE);
+		ResumeThread(*(HANDLE*)threads[i].handle);
+		if (WaitForSingleObject(*(HANDLE*)threads[i].handle, 100) == WAIT_TIMEOUT && threads[i].isRunning)
+			;
 #endif
 		delete threads[i].jLock;
 		threads[i].jLock = nullptr;
@@ -93,6 +93,8 @@ void Threading::EndThreads()
 	}
 	free(threads);
 	threads = nullptr;
+
+	return ret;
 }
 
 void Threading::FinishQueue()

@@ -64,7 +64,7 @@
 			SOA_VECTOR_CAST(vecp);						\
 		} acc2;											\
 														\
-		inline auto& operator[](int idx)				\
+		inline auto& operator[](int idx) const 			\
 		{												\
 			return *(SoaAccessor*)(((T*)&acc2)+idx);	\
 		}												\
