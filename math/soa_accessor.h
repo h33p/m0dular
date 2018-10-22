@@ -6,7 +6,7 @@
 
 #define SOA_VECTOR_CAST(type)					\
 	template<size_t B>							\
-	explicit operator type<T, B>() {			\
+	explicit inline operator type<T, B>() {		\
 		type<T, B> ret;							\
 		constexpr size_t mv = B < X ? B : X;	\
 		auto& it = *this;						\

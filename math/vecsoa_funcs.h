@@ -156,7 +156,7 @@ inline const T* DistTo(const SOA_TYPE& o) const
 	return DistTo<X>(o);
 }
 
-auto DirToRay(const SOA_TYPE& a, const SOA_TYPE& b) const
+inline auto DirToRay(const SOA_TYPE& a, const SOA_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
@@ -171,7 +171,7 @@ auto DirToRay(const SOA_TYPE& a, const SOA_TYPE& b) const
 	return a + d * t;
 }
 
-auto DirToLine(const SOA_TYPE& a, const SOA_TYPE& b) const
+inline auto DirToLine(const SOA_TYPE& a, const SOA_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
@@ -186,7 +186,7 @@ auto DirToLine(const SOA_TYPE& a, const SOA_TYPE& b) const
 	return a + d * t;
 }
 
-auto Normalized() const
+inline auto Normalized() const
 {
 	auto val = *this;
 	float l[Y];
@@ -197,7 +197,7 @@ auto Normalized() const
 	return val;
 }
 
-void Normalize()
+inline void Normalize()
 {
 	*this = Normalized();
 }

@@ -221,7 +221,7 @@ struct vec3soa
 #define SOA_TYPE vec3soa
 #include "vecsoa_funcs.h"
 
-	bool operator==(vec3soa& ov)
+	inline bool operator==(const vec3soa& ov) const
 	{
 		for (size_t i = 0; i < X; i++)
 			for (size_t o = 0; o < Y; o++)
@@ -230,7 +230,7 @@ struct vec3soa
 		return true;
 	}
 
-	bool operator!=(vec3soa& o)
+	inline bool operator!=(const vec3soa& o) const
 	{
 		return !operator==(o);
 	}
@@ -287,7 +287,7 @@ struct vecSoa
 #define SOA_TYPE vecSoa
 #include "vecsoa_funcs.h"
 
-	bool operator==(vecSoa& ov)
+	inline bool operator==(const vecSoa& ov) const
 	{
 		for (size_t i = 0; i < X; i++)
 			for (size_t o = 0; o < Y; o++)
@@ -296,7 +296,7 @@ struct vecSoa
 		return true;
 	}
 
-	bool operator!=(vecSoa& o)
+	inline bool operator!=(const vecSoa& o) const
 	{
 		return !operator==(o);
 	}

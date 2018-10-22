@@ -59,7 +59,7 @@ inline T Length() const
 	return Length<N>();
 }
 
-auto Normalized() const
+inline auto Normalized() const
 {
 	auto val = *this;
 	float l = val.Length();
@@ -67,24 +67,24 @@ auto Normalized() const
 	return val;
 }
 
-auto& Normalize()
+inline auto& Normalize()
 {
 	*this = Normalized();
 	return *this;
 }
 
 template <size_t D>
-T DistTo(const VEC_TYPE& o) const
+inline T DistTo(const VEC_TYPE& o) const
 {
 	return (*this - o).template Length<D>();
 }
 
-T DistTo(const VEC_TYPE& o) const
+inline T DistTo(const VEC_TYPE& o) const
 {
 	return DistTo<N>(o);
 }
 
-auto DirToRay(const VEC_TYPE& a, const VEC_TYPE& b) const
+inline auto DirToRay(const VEC_TYPE& a, const VEC_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
@@ -94,7 +94,7 @@ auto DirToRay(const VEC_TYPE& a, const VEC_TYPE& b) const
 	return a + t * d;
 }
 
-auto DirToLine(const VEC_TYPE& a, const VEC_TYPE& b) const
+inline auto DirToLine(const VEC_TYPE& a, const VEC_TYPE& b) const
 {
 	auto c = *this - a;
 	auto d = b - a;
