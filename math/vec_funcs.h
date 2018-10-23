@@ -2,6 +2,16 @@
 
 #ifdef VEC_TYPE
 
+constexpr VEC_TYPE() = default;
+
+template<typename... F>
+constexpr VEC_TYPE(F... args) : v()
+{
+	constexpr size_t elementCount = sizeof...(args);
+	for (size_t i = 0; i < N; i++)
+		v[i] = GetElementAt(i % elementCount, args...);
+}
+
 inline auto& Assign(T val)
 {
 	for (size_t i = 0; i < N; i++)

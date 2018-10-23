@@ -6,6 +6,18 @@
 
 #ifdef SOA_TYPE
 
+constexpr SOA_TYPE() = default;
+
+template<typename... F>
+constexpr SOA_TYPE(F... args) : v()
+{
+	constexpr size_t elementCount = sizeof...(args);
+
+	for (size_t i = 0; i < Xt; i++)
+		for (size_t o = 0; o < Yt; o++)
+			v[i][o] = GetElementAt(o % elementCount, args...);
+}
+
 //Micro-optimized version for 4 sized vector chunks since
 //Clang did not want to generate SIMD code on a normal loop
 template<size_t Q = Y>

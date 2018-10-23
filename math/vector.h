@@ -87,7 +87,7 @@ struct vecb
 #define VEC_TYPE vecb
 #include "vec_funcs.h"
 
-	bool operator==(vecb& o)
+	constexpr bool operator==(vecb& o)
 	{
 		for (size_t i = 0; i < N; i++)
 			if (v[i] != o.v[i])
@@ -95,23 +95,23 @@ struct vecb
 		return true;
 	}
 
-	bool operator!=(vecb& o)
+	constexpr bool operator!=(vecb& o)
 	{
 		return !operator==(o);
 	}
 
-	inline T& operator[](int idx)
+	constexpr T& operator[](int idx)
 	{
 		return v[idx];
 	}
 
-	inline const T& operator[](int idx) const
+	constexpr const T& operator[](int idx) const
 	{
 		return v[idx];
 	}
 
 	template<size_t B>
-	inline operator vecp<T, B>()
+	constexpr operator vecp<T, B>()
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
 		vecp<T, B> vec;
@@ -121,7 +121,7 @@ struct vecb
 	}
 
 	template<size_t B>
-	inline operator vec3soa<T, B>()
+	constexpr operator vec3soa<T, B>()
 	{
 		vec3soa<T, B> ret;
 		for (size_t i = 0; i < 3; i++)
@@ -147,7 +147,7 @@ struct vecp
 #define VEC_TYPE vecp
 #include "vec_funcs.h"
 
-	bool operator==(vecp& o)
+	constexpr bool operator==(vecp& o)
 	{
 		for (size_t i = 0; i < N; i++)
 			if (v[i] != o.v[i])
@@ -155,23 +155,23 @@ struct vecp
 		return true;
 	}
 
-	bool operator!=(vecp& o)
+	constexpr bool operator!=(vecp& o)
 	{
 		return !operator==(o);
 	}
 
-	inline T& operator[](int idx)
+	constexpr T& operator[](int idx)
 	{
 		return v[idx];
 	}
 
-	inline const T& operator[](int idx) const
+	constexpr const T& operator[](int idx) const
 	{
 		return v[idx];
 	}
 
 	template<size_t B>
-	inline auto& operator=(vecb<float, B>& vec)
+	constexpr auto& operator=(vecb<float, B>& vec)
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
 		for (size_t i = 0; i < mv; i++)
@@ -180,7 +180,7 @@ struct vecp
 	}
 
 	template<size_t B>
-	inline operator vecb<T, B>()
+	constexpr operator vecb<T, B>()
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
 		vecb<T, B> vec;
@@ -190,7 +190,7 @@ struct vecp
 	}
 
 	template<size_t B>
-	inline operator vec3soa<T, B>()
+	constexpr operator vec3soa<T, B>()
 	{
 		vec3soa<T, B> ret;
 		for (size_t i = 0; i < 3; i++)
@@ -221,7 +221,7 @@ struct vec3soa
 #define SOA_TYPE vec3soa
 #include "vecsoa_funcs.h"
 
-	inline bool operator==(const vec3soa& ov) const
+	constexpr bool operator==(const vec3soa& ov) const
 	{
 		for (size_t i = 0; i < X; i++)
 			for (size_t o = 0; o < Y; o++)
@@ -230,7 +230,7 @@ struct vec3soa
 		return true;
 	}
 
-	inline bool operator!=(const vec3soa& o) const
+	constexpr bool operator!=(const vec3soa& o) const
 	{
 		return !operator==(o);
 	}
@@ -257,14 +257,19 @@ struct vec3soa
 
 	}
 
-	inline auto GetAngles()
+	constexpr auto GetAngles()
 	{
 		auto ret = *this;
 		ret.ToAngles();
 		return ret;
 	}
 
-	inline T* operator[](int idx)
+	constexpr T* operator[](int idx)
+	{
+		return v[idx];
+	}
+
+	constexpr const T* operator[](int idx) const
 	{
 		return v[idx];
 	}
@@ -287,7 +292,7 @@ struct vecSoa
 #define SOA_TYPE vecSoa
 #include "vecsoa_funcs.h"
 
-	inline bool operator==(const vecSoa& ov) const
+	constexpr bool operator==(const vecSoa& ov) const
 	{
 		for (size_t i = 0; i < X; i++)
 			for (size_t o = 0; o < Y; o++)
@@ -296,18 +301,23 @@ struct vecSoa
 		return true;
 	}
 
-	inline bool operator!=(const vecSoa& o) const
+	constexpr bool operator!=(const vecSoa& o) const
 	{
 		return !operator==(o);
 	}
 
-	inline T* operator[](int idx)
+	constexpr T* operator[](int idx)
+	{
+		return v[idx];
+	}
+
+	constexpr const T* operator[](int idx) const
 	{
 		return v[idx];
 	}
 
 	template<size_t B>
-	inline operator vec3soa<T, B>()
+	constexpr operator vec3soa<T, B>()
 	{
 		constexpr int mv = X < 3 ? X : 3;
 		constexpr int mb = Y < B ? Y : B;

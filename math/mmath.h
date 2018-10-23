@@ -129,18 +129,18 @@ constexpr size_t AlignUp(size_t inp)
 }
 
 template<typename T>
-inline T TMod(T val, T lim)
+constexpr T TMod(T val, T lim)
 {
 	return val % lim;
 }
 
 template<>
-inline float TMod<float>(float val, float lim)
+constexpr float TMod<float>(float val, float lim)
 {
 	return fmodf(val, lim);
 }
 
-inline float NormalizeFloat(float result, float start, float end)
+constexpr float NormalizeFloat(float result, float start, float end)
 {
 	result = fmodf(result - start, end - start);
 
@@ -148,6 +148,17 @@ inline float NormalizeFloat(float result, float start, float end)
 		result += end - start;
 
 	return result + start;
+}
+
+//This should never be called in the first place, but it is required for the compile to take place
+template<typename T>
+[[noreturn]] constexpr T GetElementAt(size_t id) {}
+
+template<typename F, typename... T>
+constexpr F GetElementAt(size_t id, F arg, T... args)
+{
+	constexpr size_t sz = sizeof...(args);
+	return (id && sz) ? GetElementAt<F>(id - 1, args...) : arg;
 }
 
 constexpr float RAD2DEG = 180.0 / M_PI;

@@ -1,50 +1,50 @@
 #ifndef VECTOR_OPERATORS_H
 
 #define VEC_OP(type, OP)									\
-	friend inline auto operator OP(type v, const type& ov)	\
+	friend constexpr auto operator OP(type v, const type& ov)	\
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v.v[o] = v.v[o] OP ov.v[o];						\
 		return v;											\
 	}														\
 															\
-	friend inline auto operator OP(type v, const T& ov)		\
+	friend constexpr auto operator OP(type v, const T& ov)	\
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v.v[o] = v.v[o] OP ov;							\
 		return v;											\
 	}														\
 															\
-	friend inline auto operator OP(type v, const T* ov)		\
+	friend constexpr auto operator OP(type v, const T* ov)	\
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v.v[o] = v.v[o] OP ov[o];						\
 		return v;											\
 	}														\
 															\
-    inline auto& operator OP##=(const type& ov)				\
+    constexpr auto& operator OP##=(const type& ov)			\
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v[o] OP##= ov.v[o];								\
 		return *this;										\
 	}														\
 															\
-	inline auto& operator OP##=(const T& ov)				\
+	constexpr auto& operator OP##=(const T& ov)				\
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v[o] OP##= ov;									\
 		return *this;										\
 	}														\
 															\
-	inline auto& operator OP##=(const T* ov)				\
+	constexpr auto& operator OP##=(const T* ov)				\
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v[o] OP##= ov[o];								\
 		return *this;										\
 	}
 
-#define SOA_OP(type, OP)							\
-	friend inline auto operator OP(type v, const type& ov)	\
+#define SOA_OP(type, OP)								\
+	friend constexpr auto operator OP(type v, const type& ov)	\
 	{													\
 		for (size_t i = 0; i < X; i++)					\
 			for (size_t o = 0; o < Y; o++)				\
@@ -52,7 +52,7 @@
 		return v;										\
 	}													\
 														\
-	friend inline auto operator OP(type v, const T& ov)	\
+	friend constexpr auto operator OP(type v, const T& ov)	\
 	{													\
 		for (size_t i = 0; i < X; i++)					\
 			for (size_t o = 0; o < Y; o++)				\
@@ -60,7 +60,7 @@
 		return v;										\
 	}													\
 														\
-	friend inline auto operator OP(type v, const T* ov)	\
+	friend constexpr auto operator OP(type v, const T* ov)	\
 	{													\
 		for (size_t i = 0; i < X; i++)					\
 			for (size_t o = 0; o < Y; o++)				\
@@ -68,7 +68,7 @@
 		return v;										\
 	}													\
 														\
-    inline auto& operator OP##=(const type& ov)			\
+    constexpr auto& operator OP##=(const type& ov)		\
 	{													\
 		for (size_t i = 0; i < X; i++)					\
 			for (size_t o = 0; o < Y; o++)				\
@@ -76,7 +76,7 @@
 		return *this;									\
 	}													\
 														\
-	inline auto& operator OP##=(const T& ov)			\
+	constexpr auto& operator OP##=(const T& ov)			\
 	{													\
 		for (size_t i = 0; i < X; i++)					\
 			for (size_t o = 0; o < Y; o++)				\
@@ -84,7 +84,7 @@
 		return *this;									\
 	}													\
 														\
-	inline auto& operator OP##=(const T* ov)			\
+	constexpr auto& operator OP##=(const T* ov)			\
 	{													\
 		for (size_t i = 0; i < X; i++)					\
 			for (size_t o = 0; o < Y; o++)				\
@@ -94,7 +94,7 @@
 
 
 #define WIDE_OP(type, OP)							\
-	friend inline auto operator OP(type v, const type& ov)	\
+	friend constexpr auto operator OP(type v, const type& ov)	\
 	{													\
 		for (size_t i = 0; i < Y; i++)					\
 			for (size_t o = 0; o < X; o++)				\
@@ -102,7 +102,7 @@
 		return v;										\
 	}													\
 														\
-	friend inline auto operator OP(type v, const T& ov)	\
+	friend constexpr auto operator OP(type v, const T& ov)	\
 	{													\
 		for (size_t i = 0; i < Y; i++)					\
 			for (size_t o = 0; o < X; o++)				\
@@ -110,7 +110,7 @@
 		return v;										\
 	}													\
 														\
-	friend inline auto operator OP(type v, const T* ov)	\
+	friend constexpr auto operator OP(type v, const T* ov)	\
 	{													\
 		for (size_t i = 0; i < Y; i++)					\
 			for (size_t o = 0; o < X; o++)				\
@@ -118,7 +118,7 @@
 		return v;										\
 	}													\
 														\
-    inline auto& operator OP##=(const type& ov)			\
+    constexpr auto& operator OP##=(const type& ov)		\
 	{													\
 		for (size_t i = 0; i < Y; i++)					\
 			for (size_t o = 0; o < X; o++)				\
@@ -126,7 +126,7 @@
 		return *this;									\
 	}													\
 														\
-	inline auto& operator OP##=(const T& ov)			\
+	constexpr auto& operator OP##=(const T& ov)			\
 	{													\
 		for (size_t i = 0; i < Y; i++)					\
 			for (size_t o = 0; o < X; o++)				\
@@ -134,7 +134,7 @@
 		return *this;									\
 	}													\
 														\
-	inline auto& operator OP##=(const T* ov)			\
+	constexpr auto& operator OP##=(const T* ov)			\
 	{													\
 		for (size_t i = 0; i < Y; i++)					\
 			for (size_t o = 0; o < X; o++)				\
@@ -149,7 +149,7 @@
 	WIDE_OP(type, *);							\
 	WIDE_OP(type, /);							\
 												\
-	inline auto& operator =(const T& ov)		\
+	constexpr auto& operator =(const T& ov)		\
 	{											\
 		for (size_t i = 0; i < Y; i++)			\
 			for (size_t o = 0; o < X; o++)		\
@@ -157,7 +157,7 @@
 		return *this;							\
 	}											\
 												\
-	inline auto& operator =(const T* ov)		\
+	constexpr auto& operator =(const T* ov)		\
 	{											\
 		for (size_t i = 0; i < Y; i++)			\
 			for (size_t o = 0; o < X; o++)		\
@@ -172,7 +172,7 @@
 	SOA_OP(type, *);							\
 	SOA_OP(type, /);							\
 												\
-	inline auto& operator =(const T& ov)		\
+	constexpr auto& operator =(const T& ov)		\
 	{											\
 		for (size_t i = 0; i < X; i++)			\
 			for (size_t o = 0; o < Y; o++)		\
@@ -180,7 +180,7 @@
 		return *this;							\
 	}											\
 												\
-	inline auto& operator =(const T* ov)		\
+	constexpr auto& operator =(const T* ov)		\
 	{											\
 		for (size_t i = 0; i < X; i++)			\
 			for (size_t o = 0; o < Y; o++)		\
@@ -195,14 +195,14 @@
 	VEC_OP(type, *);							\
 	VEC_OP(type, /);							\
 												\
-	inline auto& operator =(const T& ov)		\
+	constexpr auto& operator =(const T& ov)		\
 	{											\
 		for (size_t o = 0; o < N; o++)			\
 			v[o] = ov;							\
 		return *this;							\
 	}											\
 												\
-	inline auto& operator =(const T* ov)		\
+	constexpr auto& operator =(const T* ov)		\
 	{											\
 		for (size_t o = 0; o < N; o++)			\
 			v[o] = ov[o];						\

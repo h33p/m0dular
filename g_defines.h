@@ -25,10 +25,10 @@ inline constexpr T x64x32(T x64, T x32)
 #define OMac(Mac)
 #define OPosix(Posix)
 #define paddr(handle, name) GetProcAddress(handle, name)
-#define FASTARGS void* thisptr, void* edx
+#define FASTARGS [[maybe_unused]] void* thisptr, [[maybe_unused]] void* edx
 #define CFASTARGS thisptr, edx
 #define STDARGS
-#define THISARGS void* thisptr
+#define THISARGS [[maybe_unused]] void* thisptr
 #define LC
 #define PC
 #define WC COMMA
@@ -46,10 +46,10 @@ inline constexpr T x64x32(T x64, T x32)
 #define PosixWin(Posix, Windows) Posix
 #define LWM(Linux, Windows, Mac) Linux
 #define paddr(handle, name) dlsym(handle, name)
-#define FASTARGS void* thisptr
+#define FASTARGS [[maybe_unused]] void* thisptr
 #define CFASTARGS thisptr
-#define STDARGS void* thisptr
-#define THISARGS void* thisptr
+#define STDARGS [[maybe_unused]] void* thisptr
+#define THISARGS [[maybe_unused]] void* thisptr
 #define LC COMMA
 #define PC COMMA
 #define WC
@@ -68,10 +68,10 @@ inline constexpr T x64x32(T x64, T x32)
 #define PosixWin(Posix, Windows) Posix
 #define LWM(Linux, Windows, Mac) Mac
 #define paddr(handle, name) dlsym(handle, name)
-#define FASTARGS void* thisptr
+#define FASTARGS [[maybe_unused]] void* thisptr
 #define CFASTARGS thisptr
-#define STDARGS void* thisptr
-#define THISARGS void* thisptr
+#define STDARGS [[maybe_unused]] void* thisptr
+#define THISARGS [[maybe_unused]] void* thisptr
 #define LC COMMA
 #define PC COMMA
 #define WC
