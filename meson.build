@@ -4,8 +4,8 @@ compile_args = ['-DNUM_THREADS=4', '-Werror', '-Wno-unused-command-line-argument
 linker_args = compile_args
 
 if not get_option('buildtype').startswith('debug')
-	compile_args += ['-flto', '-Ofast', '-msse4.2']
-  linker_args += ['-flto']
+	compile_args += ['-Ofast']
+	linker_args += ['-flto']
 else
   compile_args += ['-g', '-O0']
 endif
@@ -23,7 +23,7 @@ if meson.is_cross_build()
 		cpu_family = host_machine.cpu_family()
 		if build_machine.system() != 'windows'
 			linker_args += '-fuse-ld=lld'
-			add_args = ['-target', 'i386-pc-windows-msvc19.14.26428', '-Wno-msvc-not-found', '-D_CRT_SECURE_NO_WARNINGS', '-D_WINSOCK_DEPRECATED_NO_WARNINGS', '-fms-extensions', '-fms-compatibility', '-fms-compatibility-version=19.14.26428', '-Wno-expansion-to-defined', '-Wno-nonportable-include-path', '-Wno-pragma-pack', '-Wno-ignored-attributes', '-Wno-ignored-pragma-intrinsic', '-Wno-int-to-void-pointer-cast', '-fuse-ld=lld', '-flto', '-Wno-non-virtual-dtor', '-Wno-unused-local-typedef', '-Wno-unknown-pragmas']
+			add_args = ['-target', 'i386-pc-windows-msvc19.14.26428', '-Wno-msvc-not-found', '-D_CRT_SECURE_NO_WARNINGS', '-D_WINSOCK_DEPRECATED_NO_WARNINGS', '-fms-extensions', '-fms-compatibility', '-fms-compatibility-version=19.14.26428', '-Wno-expansion-to-defined', '-Wno-nonportable-include-path', '-Wno-pragma-pack', '-Wno-ignored-attributes', '-Wno-ignored-pragma-intrinsic', '-Wno-int-to-void-pointer-cast', '-fuse-ld=lld', '-Wno-non-virtual-dtor', '-Wno-unused-local-typedef', '-Wno-unknown-pragmas']
 
 			bf_dir = get_option('msvc_dir')
 			#includes += join_paths(bf_dir, 'include/clang')
@@ -79,10 +79,14 @@ smtx = executable('shared_mutex_test', files(['tests/shared_mutex.cpp', 'utils/t
 mtx = executable('mutex_test', files(['tests/mutex.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 tpool = executable('thread_pool_test', files(['tests/thread_pool.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 crc = executable('crc_test', files(['tests/crc.cpp', 'utils/crc32.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
-vectors = executable('vector_test', files(['tests/vector.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+
 
 test('shared mutex', smtx)
 test('mutex', mtx)
 test('thread_pool', tpool)
 test('crc', crc)
-test('vectors', vectors)
+
+foreach p : ['no-sse2', 'sse2', 'sse4.2', 'avx', 'avx2', 'avx512f']
+        vectors = executable('vector_test_'+p, files(['tests/vector.cpp']), cpp_args : compile_args + ['-m'+p], link_args : linker_args, dependencies : thread_dep)
+        test('vectors_'+p, vectors)
+endforeach

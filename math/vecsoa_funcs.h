@@ -28,53 +28,82 @@ constexpr SOA_TYPE(F... args) : v()
 
 //Micro-optimized version for 4 sized vector chunks since
 //Clang did not want to generate SIMD code on a normal loop
-template<size_t Q = Y>
-inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int dim)
+template<size_t Q = Y, size_t D = X>
+inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int dim, T vv[D][Q])
 {
 	if (!dim)
 		return;
 
 	__m128 a = _mm_loadu_ps(v[dim-1]);
-	__m128 b = _mm_loadu_ps(v[dim]);
+	__m128 b = _mm_loadu_ps(vv[dim]);
 	a = _mm_add_ps(a, b);
-	_mm_storeu_ps(v[dim-1], a);
+	_mm_storeu_ps(vv[dim-1], a);
 
-	AddUpDim(--dim);
+	AddUpDim(--dim, vv);
 }
 
-template<size_t Q = Y>
-inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int dim)
+template<size_t Q = Y, size_t D = X>
+inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int dim, T vv[D][Q])
 {
 	if (!dim)
 		return;
 
 	__m256 a = _mm256_loadu_ps(v[dim-1]);
-	__m256 b = _mm256_loadu_ps(v[dim]);
+	__m256 b = _mm256_loadu_ps(vv[dim]);
 	a = _mm256_add_ps(a, b);
-	_mm256_storeu_ps(v[dim-1], a);
+	_mm256_storeu_ps(vv[dim-1], a);
 
-	AddUpDim(--dim);
+	AddUpDim(--dim, vv);
 }
 
-template<size_t Q = Y>
-inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value), void>::type AddUpDim(int dim)
+template<size_t Q = Y, size_t D = X>
+inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value), void>::type AddUpDim(int dim, T vv[X][Q])
 {
 	if (!dim)
 		return;
 
-	for(; dim > 0; dim--) {
-		T* v1 = v[dim-1];
-		T* v2 = v[dim];
+	for(; dim > 0; dim--)
 		for (size_t o = 0; o < Y; o++)
-			v1[o] += v2[o];
-	}
+			vv[dim-1][o] = v[dim-1][o] + vv[dim][o];
 }
 
 template <size_t D>
 inline auto& AddUp()
 {
-	AddUpDim(D-1);
+	AddUpDim(D-1, v);
 	return *this;
+}
+
+template <size_t D>
+inline auto& AddUpTotal()
+{
+	AddUpDim(D-1, v);
+
+	for (size_t i = D - 1; i > 0; i--)
+		v[0][i - 1] += v[0][i];
+
+	return *this;
+}
+
+template <size_t D>
+inline T AddedUpTotal()
+{
+	T temp[D][Y];
+
+	for (size_t o = 0; o < Y; o++)
+		temp[D - 1][o] = 0;
+
+	AddUpDim(D - 1, temp);
+
+	for (size_t i = Y - 1; i > 0; i--)
+		temp[0][i - 1] += temp[0][i];
+
+	return temp[0][0];
+}
+
+inline T AddedUpTotal()
+{
+	return AddedUpTotal<X>();
 }
 
 //Constant array functions
@@ -176,6 +205,17 @@ inline const T* LengthSqr() const
 inline const T* Length() const
 {
 	return Length<X>();
+}
+
+constexpr auto Abs() const
+{
+	auto ret = *this;
+
+	for (size_t i = 0; i < X; i++)
+		for (size_t o = 0; o < Y; o++)
+			ret[i][o] = std::abs(ret[i][o]);
+
+	return ret;
 }
 
 template <size_t D>

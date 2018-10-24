@@ -35,8 +35,6 @@ inline void VSqrt(T val[Q])
 		val[i] = sqrt(val[i]);
 }
 
-static_assert(PSIMD >= 4);
-
 #if PSIMD >= 4
 template<>
 inline void VSqrt<float, 4>(float val[4])

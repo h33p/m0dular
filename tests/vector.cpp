@@ -61,8 +61,10 @@ int main()
 				back[i + 50] = combined[i] / arr[i];
 
 			for (int i = 0; i < 100; i++)
-				if (arr[i] != back[i])
+				if ((arr[i] - back[i]).LengthSqr() > 0.01f) {
+					printf("Mismatch! %f %f %f | %f %f %f\n", arr[i][0], arr[i][1], arr[i][2], back[i][0], back[i][1], back[i][2]);
 					return exit_error(2000 + i);
+				}
 		}
 
 		printf("Vec test 2 passed!\n");
@@ -79,7 +81,7 @@ int main()
 				back[i] = combined[i].Sqrt();
 
 			for (int i = 0; i < 100; i++)
-				if (arr[i] != back[i])
+				if ((arr[i] - back[i]).LengthSqr() > 0.01f)
 					return exit_error(3000 + i);
 		}
 
@@ -108,7 +110,7 @@ int main()
 				back[i + 50] = combined[i] - arr[i];
 
 			for (int i = 0; i < 100; i++)
-				if (arr[i] != back[i])
+				if ((arr[i] - back[i]).Abs().AddedUpTotal() > 0.01f)
 					return exit_error(10000 + i);
 		}
 
@@ -129,7 +131,7 @@ int main()
 				back[i + 50] = combined[i] / arr[i];
 
 			for (int i = 0; i < 100; i++)
-				if (arr[i] != back[i])
+				if ((arr[i] - back[i]).Abs().AddedUpTotal() > 0.01f)
 					return exit_error(20000 + i);
 		}
 
@@ -145,15 +147,13 @@ int main()
 
 			vec3soa<float, 8> back[100];
 
-			for (int i = 0; i < 100; i++) {
-				printf("%d\n", i);
+			for (int i = 0; i < 100; i++)
 				back[i] = combined[i].Sqrt();
-			}
 
 			printf("Part 2\n");
 
 			for (int i = 0; i < 100; i++)
-				if (arr[i] != back[i])
+				if ((arr[i] - back[i]).Abs().AddedUpTotal() > 0.01f)
 					return exit_error(30000 + i);
 		}
 
