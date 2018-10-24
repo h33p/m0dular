@@ -4,7 +4,14 @@
 
 constexpr VEC_TYPE() = default;
 
-template<typename... F>
+template<typename F, typename = typename std::enable_if<AllArithmetic<F>::value>::type>
+constexpr VEC_TYPE(F arg) : v()
+{
+	for (size_t i = 0; i < N; i++)
+		v[i] = arg;
+}
+
+template<typename... F, typename = typename std::enable_if<AllArithmetic<F...>::value>::type>
 constexpr VEC_TYPE(F... args) : v()
 {
 	constexpr size_t elementCount = sizeof...(args);
@@ -42,10 +49,18 @@ inline T Length() const
 }
 
 template <size_t D>
+inline auto& Sqrt()
+{
+	constexpr size_t Md = D > N ? N : D;
+	VSqrt<T, Md>(v);
+	return *this;
+}
+
+template <size_t D>
 inline auto& NormalizeAngles(T start, T end)
 {
 	for (size_t i = 0; i < D; i++)
-		v[i] = TMod(v[i] - start + (end - start), end - start) + start;
+		v[i] = std::remainder(v[i] - start + (end - start), end - start) + start;
 	return *this;
 }
 
@@ -67,6 +82,11 @@ inline T LengthSqr() const
 inline T Length() const
 {
 	return Length<N>();
+}
+
+inline auto& Sqrt()
+{
+	return Sqrt<N>();
 }
 
 inline auto Normalized() const

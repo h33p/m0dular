@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include "../utils/threading.h"
 #include "../utils/shared_mutex.h"
+
 #include <atomic>
+#include <thread>
+#include <chrono>
 
 std::atomic_int expected_value(0);
 int value = 0;
@@ -9,21 +12,21 @@ bool cont = true;
 SharedMutex mtx;
 std::atomic_int global_return_status(0);
 
-void* WriteFunc(void*)
+void* __stdcall WriteFunc(void*)
 {
 	while (cont) {
 		int newval = rand();
 		mtx.wlock();
 		value = newval;
-		usleep(100 + rand() % 10000);
+		std::this_thread::sleep_for(std::chrono::microseconds(100 + rand() % 10000));
 		expected_value.store(value);
 		mtx.wunlock();
-		usleep(100 + rand() % 1000);
+		std::this_thread::sleep_for(std::chrono::microseconds(100 + rand() % 1000));
 	}
 	return nullptr;
 }
 
-void* ReadFunc(void*)
+void* __stdcall ReadFunc(void*)
 {
 	int local = -1;
 	while (cont) {
@@ -34,7 +37,7 @@ void* ReadFunc(void*)
 			local = value;
 		}
 		mtx.runlock();
-		usleep(rand() % 100);
+		std::this_thread::sleep_for(std::chrono::microseconds(rand() % 100));
 	}
 	return nullptr;
 }
@@ -47,14 +50,14 @@ int main()
 	thread_t read_thread2 = Threading::StartThread(ReadFunc, nullptr, false);
 	thread_t read_thread3 = Threading::StartThread(ReadFunc, nullptr, false);
 
-	usleep(500000);
+	std::this_thread::sleep_for(std::chrono::microseconds(500000));
 
 	cont = false;
 	void* ret = nullptr;
-	pthread_join(write_thread, &ret);
-	pthread_join(read_thread1, &ret);
-	pthread_join(read_thread2, &ret);
-	pthread_join(read_thread3, &ret);
+	Threading::JoinThread(write_thread, &ret);
+	Threading::JoinThread(read_thread1, &ret);
+	Threading::JoinThread(read_thread2, &ret);
+	Threading::JoinThread(read_thread3, &ret);
 
 	return -global_return_status.load();
 }

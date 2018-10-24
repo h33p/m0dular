@@ -8,7 +8,15 @@
 
 constexpr SOA_TYPE() = default;
 
-template<typename... F>
+template<typename F, typename = typename std::enable_if<AllArithmetic<F>::value>::type>
+constexpr SOA_TYPE(F arg) : v()
+{
+	for (size_t i = 0; i < Xt; i++)
+		for (size_t o = 0; o < Yt; o++)
+			v[i][o] = arg;
+}
+
+template<typename... F, typename = typename std::enable_if<AllArithmetic<F...>::value>::type>
 constexpr SOA_TYPE(F... args) : v()
 {
 	constexpr size_t elementCount = sizeof...(args);
@@ -93,6 +101,14 @@ inline void Length(T val[Y]) const
 	VSqrt<T, Y>(val);
 }
 
+template <size_t D>
+inline auto& Sqrt()
+{
+	for (size_t i = 0; i < D; i++)
+		VSqrt<T, Y>(v[i]);
+	return *this;
+}
+
 inline void Dot(const SOA_TYPE& o, T val[Y]) const
 {
 	Dot<X>(o, val);
@@ -103,9 +119,14 @@ inline void LengthSqr(T val[Y]) const
 	LengthSqr<X>(val);
 }
 
-inline void Length(T val[Y])
+inline void Length(T val[Y]) const
 {
 	Length<X>(val);
+}
+
+inline auto& Sqrt()
+{
+	return Sqrt<X>();
 }
 
 template <size_t D>

@@ -2,6 +2,7 @@
 #define CRC32_H
 
 #include <array>
+#include "shared_utils.h"
 
 typedef unsigned int crcs_t;
 
@@ -28,36 +29,22 @@ constexpr auto GenCRCTable(T polynomial = 0xedb88320) {
 
 static constexpr auto crc32Tab = GenCRCTable<crcs_t>();
 
-#define CCRC32(x) x##_crc32
+#define CCRC32(x) calc_constexpr<crcs_t, ConstantCrc32(x, sizeof(x) - 1)>::value
 
-#ifdef _WIN32
-__forceinline
-#else
-__inline
-__attribute__((always_inline))
-__attribute__((no_instrument_function))
-#endif
-constexpr crcs_t Crc32Helper(crcs_t crc) {
-	return ~crc;
-}
-
-template<typename T, typename... Args>
-#ifdef _WIN32
-__forceinline
-#else
-__inline
-__attribute__((always_inline))
-__attribute__((no_instrument_function))
-#endif
-constexpr crcs_t Crc32Helper(crcs_t crc, T arg, Args... args) {
-	return Crc32Helper(
-		crc32Tab[((crc) ^ (arg)) & 0xff] ^ ((crc) >> 8), args...);
-}
-
-template <typename T = char, T...cv>
-constexpr crcs_t operator ""_crc32()
+constexpr crcs_t ConstantCrc32(const char* cv, size_t size)
 {
-	return Crc32Helper(~crcs_t(0), cv...);
+	crcs_t ret(0);
+	ret = ~ret;
+
+	for (size_t i = 0; i < size; i++)
+		ret = crc32Tab[((ret) ^ (cv[i])) & 0xff] ^ ((ret) >> 8);
+
+	return ~ret;
+}
+
+constexpr crcs_t operator ""_crc32(const char* cv, size_t size)
+{
+	return ConstantCrc32(cv, size);
 }
 
 crcs_t Crc32(const char* str, int len);

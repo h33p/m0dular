@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "../utils/threading.h"
 
+#include <thread>
+#include <chrono>
+
 int value = 0;
 bool cont = true;
 Mutex mtx;
@@ -13,7 +16,7 @@ struct threadjob
 
 void TJob(threadjob* job)
 {
-	usleep(job->delay);
+	std::this_thread::sleep_for(std::chrono::microseconds(job->delay));
 	global_return_status++;
 }
 

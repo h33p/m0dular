@@ -153,6 +153,7 @@ namespace Threading
 	void UnbindThread(LList<struct Job>* jobsQueue);
 	thread_t StartThread(threadFn start, void* param, bool detached = true);
 	thread_t StartThread(threadFn start, void* param, bool detached, thread_t* thread);
+	void JoinThread(thread_t thread, void** returnVal);
 
 	template<typename N, typename T>
 	uint64_t QueueJob(N function, T data) {

@@ -35,13 +35,15 @@ inline void VSqrt(T val[Q])
 		val[i] = sqrt(val[i]);
 }
 
+static_assert(PSIMD >= 4);
+
 #if PSIMD >= 4
 template<>
 inline void VSqrt<float, 4>(float val[4])
 {
-	__m128 x = _mm_load_ps(val);
+	__m128 x = _mm_loadu_ps(val);
 	x = _mm_sqrt_ps(x);
-	_mm_store_ps(val, x);
+	_mm_storeu_ps(val, x);
 }
 #endif
 
@@ -49,9 +51,9 @@ inline void VSqrt<float, 4>(float val[4])
 template<>
 inline void VSqrt<float, 8>(float val[8])
 {
-	__m256 x = _mm256_load_ps(val);
+	__m256 x = _mm256_loadu_ps(val);
 	x = _mm256_sqrt_ps(x);
-	_mm256_store_ps(val, x);
+	_mm256_storeu_ps(val, x);
 }
 #endif
 
@@ -59,9 +61,9 @@ inline void VSqrt<float, 8>(float val[8])
 template<>
 inline void VSqrt<float, 16>(float val[16])
 {
-	__m512 x = _mm512_load_ps(val);
+	__m512 x = _mm512_loadu_ps(val);
 	x = _mm512_sqrt_ps(x);
-	_mm512_store_ps(val, x);
+	_mm512_storeu_ps(val, x);
 }
 #endif
 
@@ -114,7 +116,7 @@ struct vecb
 	constexpr operator vecp<T, B>()
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
-		vecp<T, B> vec;
+		vecp<T, B> vec = {};
 		for (size_t i = 0; i < mv; i++)
 			vec[i] = v[i];
 		return vec;
@@ -123,7 +125,7 @@ struct vecb
 	template<size_t B>
 	constexpr operator vec3soa<T, B>()
 	{
-		vec3soa<T, B> ret;
+		vec3soa<T, B> ret = {};
 		for (size_t i = 0; i < 3; i++)
 			for (size_t o = 0; o < B; o++)
 				ret[i][o] = v[i];
@@ -146,6 +148,7 @@ struct vecp
 
 #define VEC_TYPE vecp
 #include "vec_funcs.h"
+
 
 	constexpr bool operator==(vecp& o)
 	{
@@ -183,7 +186,7 @@ struct vecp
 	constexpr operator vecb<T, B>()
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
-		vecb<T, B> vec;
+		vecb<T, B> vec = {};
 		for (size_t i = 0; i < mv; i++)
 			vec[i] = v[i];
 		return vec;
@@ -192,7 +195,7 @@ struct vecp
 	template<size_t B>
 	constexpr operator vec3soa<T, B>()
 	{
-		vec3soa<T, B> ret;
+		vec3soa<T, B> ret = {};
 		for (size_t i = 0; i < 3; i++)
 			for (size_t o = 0; o < B; o++)
 				ret[i][o] = v[i];

@@ -74,6 +74,15 @@ struct comp_if
 	static const bool value = (A == B);
 };
 
+template<typename first, typename...more>
+struct AllArithmetic {
+	static const bool value = std::is_arithmetic<first>::value &&
+		AllArithmetic<more...>::value;
+};
+
+template<typename first>
+struct AllArithmetic<first> : std::is_arithmetic<first> {};
+
 template<size_t N>
 constexpr int NumOf(const int val)
 {
@@ -129,20 +138,15 @@ constexpr size_t AlignUp(size_t inp)
 }
 
 template<typename T>
-constexpr T TMod(T val, T lim)
+[[deprecated("Duplicate function")]]
+inline T TMod(T val, T lim)
 {
-	return val % lim;
+	return std::remainder(val, lim);
 }
 
-template<>
-constexpr float TMod<float>(float val, float lim)
+inline float NormalizeFloat(float result, float start, float end)
 {
-	return fmodf(val, lim);
-}
-
-constexpr float NormalizeFloat(float result, float start, float end)
-{
-	result = fmodf(result - start, end - start);
+	result = std::remainder(result - start, end - start);
 
 	if (result < 0.f)
 		result += end - start;
@@ -152,7 +156,10 @@ constexpr float NormalizeFloat(float result, float start, float end)
 
 //This should never be called in the first place, but it is required for the compile to take place
 template<typename T>
-[[noreturn]] constexpr T GetElementAt(size_t id) {}
+constexpr T GetElementAt(size_t id)
+{
+	return T();
+}
 
 template<typename F, typename... T>
 constexpr F GetElementAt(size_t id, F arg, T... args)

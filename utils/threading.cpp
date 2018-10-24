@@ -156,3 +156,12 @@ thread_t Threading::StartThread(threadFn start, void* arg, bool detached)
 	thread_t thread;
 	return StartThread(start, arg, detached, &thread);
 }
+
+void Threading::JoinThread(thread_t thread, void** returnVal)
+{
+#ifdef __posix__
+	pthread_join(thread, returnVal);
+#else
+	WaitForSingleObject((void*)thread, INFINITE);
+#endif
+}

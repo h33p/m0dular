@@ -38,7 +38,7 @@ SharedMutex::SharedMutex() {
 }
 
 SharedMutex::~SharedMutex() {
-  	::DeleteCriticalSection(&lock);
+	//No release function
 }
 
 void SharedMutex::rlock() {

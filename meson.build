@@ -1,6 +1,6 @@
 project('m0dular-framework', 'cpp', 'c', default_options : ['c_std=c11', 'cpp_std=c++17', 'b_ndebug=if-release'])
 
-compile_args = ['-DNUM_THREADS=4']
+compile_args = ['-DNUM_THREADS=4', '-Werror', '-Wno-unused-command-line-argument']
 linker_args = compile_args
 
 if not get_option('buildtype').startswith('debug')
