@@ -4,10 +4,7 @@
 #include <pthread.h>
 
 SharedMutex::SharedMutex() {
-	int ret = pthread_rwlock_init(&lock, nullptr);
-	if (ret) {
-		throw;
-	}
+	lock = PTHREAD_RWLOCK_INITIALIZER;
 }
 
 SharedMutex::~SharedMutex() {
@@ -18,16 +15,26 @@ void SharedMutex::rlock() {
 	pthread_rwlock_rdlock(&lock);
 }
 
+bool SharedMutex::tryrlock() {
+	int ret = pthread_rwlock_tryrdlock(&lock);
+	return !ret;
+}
+
 void SharedMutex::runlock() {
-  	pthread_rwlock_unlock(&lock);
+	pthread_rwlock_unlock(&lock);
 }
 
 void SharedMutex::wlock() {
 	pthread_rwlock_wrlock(&lock);
 }
 
+bool SharedMutex::trywlock() {
+	int ret = pthread_rwlock_trywrlock(&lock);
+	return !ret;
+}
+
 void SharedMutex::wunlock() {
-  	pthread_rwlock_unlock(&lock);
+	pthread_rwlock_unlock(&lock);
 }
 
 #else
@@ -45,12 +52,20 @@ void SharedMutex::rlock() {
 	::AcquireSRWLockShared(&lock);
 }
 
+bool SharedMutex::tryrlock() {
+	return ::TryAcquireSRWLockShared(&lock);
+}
+
 void SharedMutex::runlock() {
 	::ReleaseSRWLockShared(&lock);
 }
 
 void SharedMutex::wlock() {
 	::AcquireSRWLockExclusive(&lock);
+}
+
+bool SharedMutex::trywlock() {
+	return ::TryAcquireSRWLockExclusive(&lock);
 }
 
 void SharedMutex::wunlock() {

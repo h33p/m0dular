@@ -1,13 +1,14 @@
 project('m0dular-framework', 'cpp', 'c', default_options : ['c_std=c11', 'cpp_std=c++17', 'b_ndebug=if-release'])
 
-compile_args = ['-DNUM_THREADS=4', '-Werror', '-Wno-unused-command-line-argument']
+compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-unused-command-line-argument', '-Wno-missing-braces']
 linker_args = compile_args
 
 if not get_option('buildtype').startswith('debug')
-	compile_args += ['-Ofast']
-	linker_args += ['-flto']
+	compile_args += ['-Ofast', '-march=native']
+	linker_args += ['-flto', '-O0']
 else
   compile_args += ['-g', '-O0']
+  #linker_args += ['-lubsan']
 endif
 
 includes = []
@@ -79,12 +80,18 @@ smtx = executable('shared_mutex_test', files(['tests/shared_mutex.cpp', 'utils/t
 mtx = executable('mutex_test', files(['tests/mutex.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 tpool = executable('thread_pool_test', files(['tests/thread_pool.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 crc = executable('crc_test', files(['tests/crc.cpp', 'utils/crc32.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+#code_crypt = executable('code_crypt_test', files(['tests/codecrypt.cpp', 'utils/codecrypt.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/shared_mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+#settings = executable('settings_test', files(['tests/settings.cpp', 'utils/crc32.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+allocator = executable('allocator_test', files(['tests/allocator.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0'], link_args : linker_args, dependencies : thread_dep)
 
 
 test('shared mutex', smtx)
 test('mutex', mtx)
 test('thread_pool', tpool)
 test('crc', crc)
+#test('code_crypt', code_crypt)
+#test('settings', settings)
+test('allocator', allocator)
 
 foreach p : ['no-sse2', 'sse2', 'sse4.2', 'avx', 'avx2', 'avx512f']
         vectors = executable('vector_test_'+p, files(['tests/vector.cpp']), cpp_args : compile_args + ['-m'+p], link_args : linker_args, dependencies : thread_dep)

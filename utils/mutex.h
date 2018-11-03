@@ -13,6 +13,7 @@ class Mutex {
 	Mutex();
 	~Mutex();
 	void lock();
+	bool trylock();
 	void unlock();
 	//private:
 #if defined(__linux__) || defined(__APPLE__)

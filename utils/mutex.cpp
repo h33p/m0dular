@@ -18,6 +18,10 @@ void Mutex::lock() {
 	pthread_mutex_lock(&lck);
 }
 
+bool Mutex::trylock() {
+	return !pthread_mutex_trylock(&lck);
+}
+
 void Mutex::unlock() {
 	pthread_mutex_unlock(&lck);
 }

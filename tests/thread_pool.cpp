@@ -20,14 +20,25 @@ void TJob(threadjob* job)
 	global_return_status++;
 }
 
+typedef std::chrono::high_resolution_clock Clock;
+long mtime = 0;
+std::atomic_long mtimef(0);
+
 int main()
 {
 	srand(time(nullptr));
 	Threading::InitThreads();
 
-	for (int i = 0; i < 100000; i++) {
-		Threading::QueueJob(TJob, (threadjob){10 + rand() % 10});
+	for (int i = 0; i < 1000000; i++) {
+		auto t1 = Clock::now();
+		Threading::QueueJob(TJob, (threadjob){0 * 1 + rand() % 1});
+		auto t2 = Clock::now();
+		mtime = std::max(mtime, std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
 		global_return_status--;
+		if (!(i % 100000)) {
+			printf("%d... (%lu)\n", i, mtime);
+			mtime = 0;
+		}
 	}
 
 	threadjob* testdata[1000];
@@ -46,6 +57,8 @@ int main()
 	for (int i = 0; i < 100000; i++) {
 		Threading::QueueJobRef(TJob, testdata[i % 1000]);
 		global_return_status--;
+		if (!(i % 10000))
+			printf("%d...\n", i);
 	}
 
 	printf("Queued the second batch of jobs\n");

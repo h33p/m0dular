@@ -55,7 +55,7 @@ struct LList
 		idx_t next;
 	};
 
-	PackedHeap<LEntry> entries;
+	PackedHeapL<LEntry> entries;
 
 	Mutex lock;
 	bool quit;

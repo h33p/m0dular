@@ -13,8 +13,10 @@ class SharedMutex {
 	SharedMutex();
 	~SharedMutex();
 	void rlock();
+	bool tryrlock();
 	void runlock();
 	void wlock();
+	bool trywlock();
 	void wunlock();
   private:
 #if defined(__linux__) || defined(__APPLE__)
