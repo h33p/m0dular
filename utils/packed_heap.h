@@ -9,6 +9,9 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <algorithm>
+#include <stdlib.h>
+#include <string.h>
 
 using idx_t = unsigned int;
 
@@ -129,10 +132,9 @@ class PackedHeapL
 	}
 };
 
-template<typename T>
-class PackedHeap
+class PackedAllocator
 {
-  private:
+  protected:
 
 	static const unsigned char USED_REGION = 0xaa;
 	static const unsigned char FREE_REGION = 0x88;
@@ -166,16 +168,19 @@ class PackedHeap
 		}
 	};
 
-	std::vector<char> buf;
+	char* buf = nullptr;
+	idx_t bufSize = 0;
+	idx_t bufCapacity = 0;
+
 	std::map<idx_t, std::set<idx_t>> freeRegionsTree;
 
-	bool FillHole(idx_t holeStart, idx_t size)
+	constexpr bool FillHole(idx_t holeStart, idx_t size)
 	{
 		if (size) {
 			if (size == 1) {
 				*(unsigned char*)&buf[holeStart] = HOLE_REGION;
 				return true;
-			} else if (size <= 2 * sizeof(MetaData) + sizeof(T)) {
+			} else if (size < 2 * sizeof(MetaData)) {
 				*(unsigned char*)&buf[holeStart] = HOLE_START;
 				for (idx_t i = 2; i < size; i++)
 					*(unsigned char*)&buf[holeStart + i - 1] = 0xff;
@@ -187,6 +192,7 @@ class PackedHeap
 		return false;
 	}
 
+	idx_t _Alloc(idx_t sz);
   public:
 
 	idx_t totalAllocations = 0;
@@ -194,178 +200,222 @@ class PackedHeap
 	idx_t totalResizes = 0;
 	idx_t totalReallocations = 0;
 
-	PackedHeap(size_t sz = 10)
+	PackedAllocator(size_t sz = 10);
+	PackedAllocator(const PackedAllocator& o);
+	PackedAllocator(const PackedAllocator&& o);
+	~PackedAllocator();
+
+	PackedAllocator& operator=(const PackedAllocator& o);
+	PackedAllocator& operator=(PackedAllocator&& o);
+
+	idx_t Alloc(idx_t sz = 1);
+	void Free(idx_t idx);
+
+	constexpr auto& operator[](idx_t idx) const
 	{
-		buf.reserve(sz * sizeof(T));
+		return buf[idx];
 	}
 
-	idx_t Alloc(idx_t sz)
+	constexpr auto operator+(idx_t idx) const
 	{
-		sz *= sizeof(T);
-
-		sz = sz + (sz % 4 ? 4 - sz % 4 : 0);
-
-		totalAllocations++;
-
-		size_t allocSize = sz + sizeof(MetaData) * 2;
-		if (!freeRegionsTree.empty()) {
-			auto reg = freeRegionsTree.lower_bound(sz);
-			if (reg != freeRegionsTree.end()) {
-				idx_t address = *reg->second.rbegin();
-				idx_t ret = address + sizeof(MetaData);
-				reg->second.erase(address);
-				idx_t delta = ((MetaData*)&buf[address])->size - sz;
-
-#ifdef PACKED_HEAP_DEBUG
-				if (reg->first != ((MetaData*)&buf[address])->size)
-					throw std::runtime_error("PackedHeap corruption");
-#endif
-
-				*(MetaData*)&buf[ret - sizeof(MetaData)] = {USED_REGION, sz};
-				*(MetaData*)&buf[ret + sz] = {USED_REGION, sz};
-
-				if (!reg->second.size())
-					freeRegionsTree.erase(reg);
-
-				idx_t holeStart = ret + allocSize - sizeof(MetaData);
-
-				//Check if the place is small enough for a unallocatable hole
-				if (delta && !FillHole(holeStart, delta)) {
-					idx_t holeSpotSize = delta - sizeof(MetaData) * 2;
-					*(MetaData*)&buf[holeStart] = {FREE_REGION, holeSpotSize};
-					*(MetaData*)&buf[holeStart + holeSpotSize + sizeof(MetaData)] = {FREE_REGION, holeSpotSize};
-				    freeRegionsTree[holeSpotSize].insert(holeStart);
-				}
-
-				return ret;
-			}
-		}
-
-		totalResizes++;
-
-		idx_t holeStart = buf.size();
-		idx_t holeEnd = holeStart + (holeStart % 4 ? 4 - holeStart % 4 : 0);
-
-		if (holeEnd - holeStart)
-			FillHole(holeStart, holeEnd - holeStart);
-
-		idx_t baseIdx = holeEnd + sizeof(MetaData);
-
-		if (buf.capacity() < baseIdx + sizeof(MetaData) + sz)
-			totalReallocations++;
-
-		buf.resize(baseIdx + sizeof(MetaData) + sz);
-		*(MetaData*)&buf[baseIdx - sizeof(MetaData)] = {USED_REGION, sz};
-		*(MetaData*)&buf[baseIdx + sz] = {USED_REGION, sz};
-
-		return baseIdx;
-	}
-
-	idx_t Alloc()
-	{
-		return Alloc(1);
-	}
-
-	void Free(idx_t idx)
-	{
-		if (!idx)
-			return;
-
-		totalFrees++;
-
-		MetaData* metaData = (MetaData*)&buf[idx - sizeof(MetaData)];
-
-		if (metaData->used != USED_REGION) {
-			if (metaData->used == FREE_REGION)
-#ifdef PACKED_HEAP_DEBUG
-				throw std::runtime_error("Double free");
-#else
-				return;
-#endif
-			else
-#if PACKED_HEAP_DEBUG
-				throw std::runtime_error("PackedHeap corruption");
-#else
-				return;
-#endif
-		}
-
-		idx_t start = idx - sizeof(MetaData);
-		idx_t end = idx + sizeof(MetaData) + metaData->size;
-
-		if (*metaData != *(MetaData*)&buf[end - sizeof(MetaData)])
-#if PACKED_HEAP_DEBUG
-			throw std::runtime_error("PackedHeap corruption");
-#else
-			return;
-#endif
-
-		//Check for a memory hole above the region (this can never occur below)
-		if ((unsigned char)buf[end] == HOLE_START)
-			while ((unsigned char)buf[end++] != HOLE_END)
-				;
-		else if ((unsigned char)buf[end] == HOLE_REGION)
-			end++;
-
-		MetaData* upperMetaData = (MetaData*)&buf[end - sizeof(MetaData)];
-
-		MetaData* aboveRegion = end + sizeof(MetaData) < buf.size() ? (MetaData*)&buf[end] : nullptr;
-		MetaData* belowRegion = start >= sizeof(MetaData) * 2 ? (MetaData*)&buf[start - sizeof(MetaData)] : nullptr;
-
-		//Join the nearby free regions
-		if (PACKED_HEAP_MERGE_REGIONS && aboveRegion && aboveRegion->used == FREE_REGION) {
-			[[maybe_unused]]
-			size_t ret = freeRegionsTree[aboveRegion->size].erase(end);
-
-#ifdef PACKED_HEAP_DEBUG
-			if (!ret)
-				throw std::runtime_error("PackedHeap corruption");
-
-			if (!freeRegionsTree[aboveRegion->size].size())
-				freeRegionsTree.erase(aboveRegion->size);
-#endif
-
-			upperMetaData = aboveRegion->WalkUp();
-		}
-
-		if (PACKED_HEAP_MERGE_REGIONS && belowRegion && belowRegion->used == FREE_REGION) {
-			[[maybe_unused]]
-			size_t ret = freeRegionsTree[belowRegion->size].erase(start - 2 * sizeof(MetaData) - belowRegion->size);
-
-#ifdef PACKED_HEAP_DEBUG
-			if (!ret)
-				throw std::runtime_error("PackedHeap corruption");
-
-			if (!freeRegionsTree[belowRegion->size].size())
-				freeRegionsTree.erase(belowRegion->size);
-#endif
-
-			metaData = belowRegion->WalkDown();
-		}
-
-		metaData->used = FREE_REGION;
-		metaData->size = (uintptr_t)upperMetaData - (uintptr_t)metaData - sizeof(MetaData);
-		*upperMetaData = *metaData;
-
-		freeRegionsTree[metaData->size].insert((idx_t)((uintptr_t)metaData - (uintptr_t)&buf[0]));
-	}
-
-	void Free(T* ptr)
-	{
-		idx_t idx = (char*)ptr - &buf[0];
-		if (idx < buf.size())
-			Free(idx);
-	}
-
-	inline T& operator[](idx_t idx)
-	{
-		return *(T*)&buf[idx];
-	}
-
-	inline T* operator+(idx_t idx)
-	{
-		return (T*)&buf[idx];
+		return &buf[idx];
 	}
 };
+
+template<typename T>
+class PackedHeap : PackedAllocator
+{
+  private:
+
+	template<typename U, typename F>
+	void WalkBuffer(char* prevBuf, idx_t limit, U holeHandler, F chunkHandler)
+	{
+		idx_t idx = 0;
+		while (idx < limit) {
+			MetaData* meta = (MetaData*)&prevBuf[idx];
+
+			if ((unsigned char)meta->used == HOLE_START) {
+				idx_t holeStart = idx;
+				while ((unsigned char)prevBuf[idx++] != HOLE_END)
+					;
+				holeHandler(buf, prevBuf, holeStart, idx);
+				continue;
+			} else if ((unsigned char)meta->used == HOLE_REGION) {
+				idx++;
+				holeHandler(buf, prevBuf, idx - 1, idx);
+				continue;
+			}
+
+			chunkHandler(buf, prevBuf, idx, meta);
+
+			idx += meta->size + sizeof(MetaData) * 2;
+		}
+	}
+
+	static void HoleCopy(char* buf, char* prevBuf, idx_t start, idx_t end)
+	{
+		memcpy(buf + start, prevBuf + start, end - start);
+	}
+
+	static void HoleNull(char* buf, char* prevBuf, idx_t start, idx_t end) {}
+
+	static void MoveChunk(char* buf, char* prevBuf, idx_t idx, MetaData* meta)
+	{
+		*(MetaData*)&buf[idx] = *meta;
+		*((MetaData*)&buf[idx])->WalkUp() = *meta->WalkUp();
+
+		if ((unsigned char)meta->used == USED_REGION) {
+			size_t cnt = meta->size / sizeof(T);
+			for (size_t i = 0; i < cnt; i++) {
+				new(buf + idx + sizeof(MetaData) + i * sizeof(T)) T(*(T*)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)]);
+				((T*)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)])->~T();
+			}
+		}
+	}
+
+	static void ConstructChunk(char* buf, char* prevBuf, idx_t idx, MetaData* meta)
+	{
+		*(MetaData*)&buf[idx] = *meta;
+		*((MetaData*)&buf[idx])->WalkUp() = *meta->WalkUp();
+
+		if ((unsigned char)meta->used == USED_REGION) {
+			size_t cnt = meta->size / sizeof(T);
+			for (size_t i = 0; i < cnt; i++)
+				new(buf + idx + sizeof(MetaData) + i * sizeof(T)) T(*(T*)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)]);
+		}
+	}
+
+	static void DestructChunk(char* buf, char* prevBuf, idx_t idx, MetaData* meta)
+	{
+		if ((unsigned char)meta->used == USED_REGION) {
+			size_t cnt = meta->size / sizeof(T);
+			for (size_t i = 0; i < cnt; i++)
+				((T*)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)])->~T();
+		}
+	}
+
+  public:
+
+	inline auto& operator=(const PackedHeap& o) const
+	{
+		totalAllocations = o.totalAllocations;
+		totalFrees = o.totalFrees;
+		totalResizes = o.totalResizes;
+		totalReallocations = o.totalReallocations;
+
+		freeRegionsTree = o.freeRegionsTree;
+
+		if (o.bufSize <= bufCapacity) {
+			bufSize = o.bufSize;
+		} else {
+			if (buf) {
+				WalkBuffer(buf, bufSize, HoleNull, DestructChunk);
+				free(buf);
+			}
+			bufSize = o.bufSize;
+			bufCapacity = o.bufCapacity;
+			buf = (char*)malloc(bufCapacity);
+		}
+
+		WalkBuffer(o.buf, bufSize, HoleCopy, ConstructChunk);
+		return *this;
+	}
+
+	constexpr auto& operator=(PackedHeap&& o)
+	{
+		totalAllocations = o.totalAllocations;
+		totalFrees = o.totalFrees;
+		totalResizes = o.totalResizes;
+		totalReallocations = o.totalReallocations;
+
+		freeRegionsTree = std::move(o.freeRegionsTree);
+
+		if (buf) {
+			WalkBuffer(buf, bufSize, HoleNull, DestructChunk);
+			free(buf);
+		}
+
+		bufSize = o.bufSize;
+		bufCapacity = o.bufCapacity;
+		buf = o.buf;
+		o.buf = nullptr;
+
+		return *this;
+	}
+
+	PackedHeap(size_t sz = 10)
+		: PackedAllocator(sz * sizeof(T)) {}
+
+	constexpr PackedHeap(PackedHeap& o)
+	{
+		*this = o;
+	}
+
+	constexpr PackedHeap(PackedHeap&& o)
+	{
+		*this = o;
+	}
+
+	~PackedHeap()
+	{
+		if (buf) {
+			idx_t idx = 0;
+			while (idx < bufSize - sizeof(MetaData) && idx < bufSize) {
+				MetaData* meta = (MetaData*)&buf[idx];
+
+				if ((unsigned char)meta->used == HOLE_START) {
+					while ((unsigned char)buf[idx++] != HOLE_END)
+						;
+					continue;
+				} else if ((unsigned char)meta->used == HOLE_REGION) {
+					idx++;
+					continue;
+				}
+
+				if ((unsigned char)meta->used == USED_REGION)
+					Delete(idx + sizeof(MetaData));
+
+				idx += meta->size + sizeof(MetaData) * 2;
+			}
+		}
+	}
+
+	inline idx_t New(size_t sz = 1)
+	{
+
+		if (!buf) {
+			bufCapacity = sz * sizeof(T) + 2 * sizeof(MetaData);
+			buf = (char*)malloc(bufCapacity);
+		}
+
+		char* prevBuf = buf;
+
+		idx_t ret = _Alloc(sz * sizeof(T));
+
+		//If the buffer was reallocated, we need to call the move constructors on all members and destruct the members of previous buffer
+		if (prevBuf != buf) {
+			WalkBuffer(prevBuf, std::min(ret, ret - (idx_t)sizeof(MetaData)), HoleCopy, MoveChunk);
+			free(prevBuf);
+		}
+
+		if (ret)
+			for (size_t i = 0; i < sz; i++)
+				new (&buf[ret + i * sizeof(T)]) T();
+
+		return ret;
+	}
+
+	inline void Delete(idx_t idx)
+	{
+		MetaData* meta = (MetaData*)&buf[idx - sizeof(MetaData)];
+		size_t cnt = meta->size / sizeof(T);
+
+		for (size_t i = 0; i < cnt; i++)
+			((T*)&buf[idx + i * sizeof(T)])->~T();
+
+		Free(idx);
+	}
+};
+
 
 #endif
