@@ -60,7 +60,7 @@ template <size_t D>
 inline auto& NormalizeAngles(T start, T end)
 {
 	for (size_t i = 0; i < D; i++)
-		v[i] = std::remainder(v[i] - start + (end - start), end - start) + start;
+		v[i] = std::fmod(std::fmod(v[i] - start, end - start) + (end - start), end - start) + start;
 	return *this;
 }
 
