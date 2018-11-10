@@ -7,6 +7,25 @@ int tid = 0;
 static vec3_t shootAngles;
 static int minDamage = 50;
 
+struct AimPoint
+{
+	vec3_t end;
+	size_t hb;
+	size_t id;
+	float fov;
+};
+
+struct AimPointsSIMD
+{
+	mvec3 end;
+	size_t hb;
+	size_t id;
+	float fov;
+};
+
+std::vector<AimPoint> aimPoints;
+std::vector<AimPointsSIMD> aimPointsSIMD;
+
 static bool PreCompareDataLegit(AimbotTarget* target, LocalPlayer* localPlayer, vec3_t targetVec, int bone, float& outFOV)
 {
 	vec3_t angle = (targetVec - localPlayer->eyePos).GetAngles(true);
@@ -49,10 +68,49 @@ static bool CompareDataRage(AimbotTarget* target, LocalPlayer* localPlayer, int 
 bool doMultipoint = true;
 float pointScaleVal = 0.98f;
 
-static int ScanHitboxes(AimbotTarget* target, Players* players, size_t id, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES])
+static int ProcessAimPointsSIMD(AimbotTarget* target, Players* players, LocalPlayer* localPlayer)
+{
+	for (const auto& i : aimPointsSIMD) {
+		int out[MULTIPOINT_COUNT];
+		bool quit = false;
+
+		Tracing::TracePlayersSIMD<MULTIPOINT_COUNT>(localPlayer, players, i.end, i.id, out);
+
+		for (size_t o = 0; o < MULTIPOINT_COUNT; o++) {
+			if (true && CompareDataLegit(target, localPlayer, out[o], (vec3_t)i.end.acc[o], i.hb, i.fov))
+				quit = true;
+			if (false && CompareDataRage(target, localPlayer, out[o], (vec3_t)i.end.acc[o], i.hb, i.fov))
+				quit = true;
+		}
+
+		if (quit)
+			return i.id;
+	}
+
+	return -1;
+}
+
+static int ProcessAimPoints(AimbotTarget* target, Players* players, LocalPlayer* localPlayer)
+{
+	for (const auto& i : aimPoints) {
+		int out = Tracing::TracePlayers(localPlayer, players, i.end, i.id);
+
+		if (true && CompareDataLegit(target, localPlayer, out, i.end, i.hb, i.fov))
+			return i.id;
+		if (false && CompareDataRage(target, localPlayer, out, i.end, i.hb, i.fov))
+			return i.id;
+	}
+
+	return -1;
+}
+
+static int PrepareHitboxList(AimbotTarget* target, Players* players, size_t id, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES])
 {
 	fovs[id] = 1000.f;
 	tid = id;
+
+	aimPointsSIMD.clear();
+	aimPoints.clear();
 
 	HitboxList& hitboxes = players->hitboxes[id];
 
@@ -69,33 +127,13 @@ static int ScanHitboxes(AimbotTarget* target, Players* players, size_t id, Local
 		if (true && !PreCompareDataLegit(target, localPlayer, average, i, fov))
 			continue;
 
-		//TODO Finish multipoint
 		if (doMultipoint) {
-			bool quit = false;
-
-			int out[MULTIPOINT_COUNT];
 			mvec3 mpVec = players->hitboxes[id].mpOffset[i] + players->hitboxes[id].mpDir[i] * players->hitboxes[id].radius[i] * pointScaleVal;
 			mpVec = players->hitboxes[id].wm[i].VecSoaTransform(mpVec);
-			Tracing::TracePlayersSIMD<MULTIPOINT_COUNT>(localPlayer, players, mpVec, id, out);
 
-			for (size_t o = 0; o < MULTIPOINT_COUNT; o++) {
-				if (true && CompareDataLegit(target, localPlayer, out[o], (vec3_t)mpVec.acc[o], i, fov))
-					quit = true;
-				if (false && CompareDataRage(target, localPlayer, out[o], (vec3_t)mpVec.acc[o], i, fov))
-					quit = true;
-			}
-
-			if (quit)
-				return 1;
-		} else {
-
-			int out = Tracing::TracePlayers(localPlayer, players, average, id);
-
-			if (true && CompareDataLegit(target, localPlayer, out, average, i, fov))
-				return 1;
-			if (false && CompareDataRage(target, localPlayer, out, average, i, fov))
-				return 1;
-		}
+			aimPointsSIMD.push_back({mpVec, i, id, fov});
+		} else
+			aimPoints.push_back({average, i, id, fov});
 	}
 
 	return 0;
@@ -107,8 +145,18 @@ static int LoopPlayers(AimbotTarget* target, Players* players, size_t count, Loc
 
 	for (size_t i = 0; i < count; i++) {
 		if (players->flags[i] & Flags::HITBOXES_UPDATED && ~players->flags[i] & Flags::FRIENDLY && players->fov[i] - 4.f < target->fov) {
-			if (ScanHitboxes(target, players, i, localPlayer, hitboxList)) {
-				target->id = i;
+			PrepareHitboxList(target, players, i, localPlayer, hitboxList);
+
+			int ap = ProcessAimPoints(target, players, localPlayer);
+			int aps = ProcessAimPointsSIMD(target, players, localPlayer);
+
+			if (ap != -1) {
+				target->id = ap;
+				ret = 1;
+			}
+
+			if (aps != -1) {
+				target->id = aps;
 				ret = 1;
 			}
 		}
