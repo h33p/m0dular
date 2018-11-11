@@ -139,12 +139,12 @@ static int PrepareHitboxList(AimbotTarget* target, Players* players, size_t id, 
 	return 0;
 }
 
-static int LoopPlayers(AimbotTarget* target, Players* players, size_t count, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES])
+static int LoopPlayers(AimbotTarget* target, Players* players, size_t count, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)])
 {
 	int ret = 0;
 
 	for (size_t i = 0; i < count; i++) {
-		if (players->flags[i] & Flags::HITBOXES_UPDATED && ~players->flags[i] & Flags::FRIENDLY && players->fov[i] - 4.f < target->fov) {
+		if (~ignoreList[players->unsortIDs[i] / 64] & (1ull << (players->unsortIDs[i] % 64)) && players->flags[i] & Flags::HITBOXES_UPDATED && ~players->flags[i] & Flags::FRIENDLY && players->fov[i] - 4.f < target->fov) {
 			PrepareHitboxList(target, players, i, localPlayer, hitboxList);
 
 			int ap = ProcessAimPoints(target, players, localPlayer);
@@ -165,7 +165,7 @@ static int LoopPlayers(AimbotTarget* target, Players* players, size_t count, Loc
     return ret;
 }
 
-static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES])
+static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)])
 {
 
 	char backtrackMask[MAX_PLAYERS];
@@ -186,7 +186,7 @@ static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_
 			if (!Tracing::BacktrackPlayers(&players, prevPlayers, backtrackMask))
 				continue;
 
-			LoopPlayers(&t2, &players, count, localPlayer, hitboxList);
+			LoopPlayers(&t2, &players, count, localPlayer, hitboxList, ignoreList);
 			if (t2.id >= 0 && t2.fov < lowestFov) {
 				lowestFov = t2.fov;
 				t2.backTick = i;
@@ -206,7 +206,7 @@ static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_
 		if (!Tracing::BacktrackPlayers(&players, prevPlayers, backtrackMask))
 			break;
 
-		LoopPlayers(&t2, &players, count, localPlayer, hitboxList);
+		LoopPlayers(&t2, &players, count, localPlayer, hitboxList, ignoreList);
 		if (t2.id >= 0 && (t2.fov < lowestFov || !Tracing::VerifyTarget(targetPlayers, target->id, backtrackMask))) {
 			lowestFov = t2.fov;
 			t2.backTick = i;
@@ -218,12 +218,12 @@ static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_
 	}
 }
 
-AimbotTarget Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES])
+AimbotTarget Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)])
 {
 	AimbotTarget target;
 	shootAngles = localPlayer->angles + localPlayer->aimOffset;
 
-	FindBestTarget(&target, track, futureTrack, localPlayer, hitboxList);
+	FindBestTarget(&target, track, futureTrack, localPlayer, hitboxList, ignoreList);
 
 	if (target.id >= 0) {
 		vec3_t angles = (target.targetVec - localPlayer->eyePos).GetAngles(true);

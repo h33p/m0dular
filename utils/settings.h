@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+#define OPTION(type, name, ...) Option<type, CCRC32(#name), __VA_ARGS__> name
+
 class SettingsGroup
 {
   public:
