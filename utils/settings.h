@@ -5,10 +5,59 @@
 #include "packed_heap.h"
 #include "shared_utils.h"
 #include <unordered_map>
+#include <vector>
 
 class SettingsGroup
 {
   public:
+
+    SettingsGroup() {}
+
+	SettingsGroup(const std::vector<unsigned char>& buf)
+	{
+		size_t i = 0;
+		while (i < buf.size()) {
+			idx_t sz = 0;
+			crcs_t crc = 0;
+
+			for (int o = 0; o < sizeof(sz); o++)
+				((unsigned char*)&sz)[o] = buf[i + o];
+			i += sizeof(sz);
+
+			for (int o = 0; o < sizeof(crc); o++)
+				((unsigned char*)&crc)[o] = buf[i + o];
+			i += sizeof(crc);
+
+			idx_t a = alloc.Alloc(sz);
+
+			for (int o = 0; o < sz; o++)
+				alloc[a + o] = buf[i++];
+
+			map[crc] = a;
+		}
+
+		map.rehash(0);
+	}
+
+	inline std::vector<unsigned char> Serialize()
+	{
+		std::vector<unsigned char> ret;
+		for (auto& i : map) {
+			idx_t sz = *(idx_t*)(alloc + i.second - sizeof(idx_t));
+			crcs_t crc = i.first;
+
+			for (int o = 0; o < sizeof(sz); o++)
+				ret.push_back(((unsigned char*)&sz)[o]);
+
+			for (int o = 0; o < sizeof(crc); o++)
+				ret.push_back(((unsigned char*)&crc)[o]);
+
+			for (int o = 0; o < sz; o++)
+				ret.push_back(alloc[i.second + o]);
+		}
+		return ret;
+	}
+
 	template<typename T>
 	inline idx_t RegisterOption(crcs_t crc, const T& val)
 	{
@@ -54,17 +103,6 @@ class SettingsGroup
 	{
 		idx_t idx = ReserveOption(CRC, T());
 		return RetreiveRefFast<T>(idx);
-	}
-
-	inline void PrintAllValues()
-	{
-		for (auto& i : map) {
-			idx_t sz = *(idx_t*)(alloc + i.second - sizeof(idx_t));
-			printf("%8.x:\t", i.first);
-			for (int o = 0; o < sz; o++)
-				printf("%.2hhx", alloc[i.second + o]);
-			putchar('\n');
-		}
 	}
 
   private:
@@ -182,7 +220,6 @@ struct SettingsChain<T, CRC, G>
 template<typename T, crcs_t CRC, auto& G, auto&... Args>
 struct SettingsChain<T, CRC, G, Args...>
 	: std::conditional<IsPointer(G), OptionDataPtr<T, CRC, G>, OptionDataRef<T, CRC, G>>::type
-
 {
 	typedef typename std::conditional<IsPointer(G), OptionDataPtr<T, CRC, G>, OptionDataRef<T, CRC, G>>::type BaseType;
 

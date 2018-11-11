@@ -67,6 +67,13 @@ int main()
 	if (option_B != 993)
 		return EXIT(8);
 
+	int optB = option_B;
+
+	auto buf = groupSettings->Serialize();
+
+	if (SettingsGroup(buf).SettingsGroup::Get<int, "option_B"_crc32>() != optB)
+		return EXIT(9);
+
 	{
 		auto t1 = Clock::now();
 		for (volatile int i = 0; i < 10000000; i++) {
@@ -99,21 +106,6 @@ int main()
 
 		printf("Time: %ld\n", std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
 	}
-
-	printf("Serializing Global Settings\n");
-	globalSettings.PrintAllValues();
-	printf("Serializing Group Settings\n");
-	groupSettings->PrintAllValues();
-	printf("Serializing Group A Settings\n");
-	groupASettings.PrintAllValues();
-	printf("Serializing Group B Settings\n");
-	groupBSettings.PrintAllValues();
-	printf("Serializing Override Settings\n");
-	overrideSettings->PrintAllValues();
-	printf("Serializing Override A Settings\n");
-	overrideASettings.PrintAllValues();
-	printf("Serializing Override B Settings\n");
-	overrideBSettings.PrintAllValues();
 
 	return 0;
 }
