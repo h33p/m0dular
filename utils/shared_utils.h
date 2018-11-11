@@ -8,4 +8,29 @@ struct calc_constexpr
 	static constexpr T value = K;
 };
 
+template<typename T>
+struct is_pointer {
+	static const bool value = false;
+};
+
+template<typename T>
+struct is_pointer<T*> {
+	static const bool value = true;
+};
+
+template<typename T>
+constexpr auto& RemovePtr(T& arg)
+{
+	if constexpr(is_pointer<T>::value)
+		return *arg;
+	else
+		return arg;
+}
+
+template<typename T>
+constexpr bool IsPointer(T& arg)
+{
+	return is_pointer<T>::value;
+}
+
 #endif

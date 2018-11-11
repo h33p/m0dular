@@ -1,0 +1,325 @@
+#ifndef SETTINGS_H
+#define SETTINGS_H
+
+#include "crc32.h"
+#include "packed_heap.h"
+#include "shared_utils.h"
+#include <unordered_map>
+
+class SettingsGroup
+{
+  public:
+	template<typename T>
+	inline idx_t RegisterOption(crcs_t crc, const T& val)
+	{
+		idx_t idx = ReserveOption<T>(crc, T());
+		*(T*)(alloc + idx) = val;
+		return idx;
+	}
+
+	template<typename T>
+	inline idx_t ReserveOption(crcs_t crc, const T& val)
+	{
+		if (map.find(crc) == map.end()) {
+			idx_t idx = alloc.Alloc(sizeof(T));
+			*(T*)(alloc + idx) = val;
+			map[crc] = idx;
+		}
+		return map[crc];
+	}
+
+	inline idx_t TryGetAlloc(crcs_t crc)
+	{
+		if (map.find(crc) == map.end())
+			return 0;
+		return map[crc];
+	}
+
+	template<typename T>
+	constexpr T& RetreiveRefFast(idx_t idx)
+	{
+		return *(T*)(alloc + idx);
+	}
+
+	template<crcs_t CRC, typename T>
+	inline auto& Set(const T& val)
+	{
+		idx_t idx = RegisterOption(CRC, val);
+		RetreiveRefFast<T>(idx) = val;
+		return *this;
+	}
+
+	template<typename T, crcs_t CRC>
+	inline T Get()
+	{
+		idx_t idx = ReserveOption(CRC, T());
+		return RetreiveRefFast<T>(idx);
+	}
+
+	inline void PrintAllValues()
+	{
+		for (auto& i : map) {
+			idx_t sz = *(idx_t*)(alloc + i.second - sizeof(idx_t));
+			printf("%8.x:\t", i.first);
+			for (int o = 0; o < sz; o++)
+				printf("%.2hhx", alloc[i.second + o]);
+			putchar('\n');
+		}
+	}
+
+  private:
+	std::unordered_map<crcs_t, idx_t> map;
+	PackedAllocator alloc;
+};
+
+template<typename T, crcs_t CRC, auto& G>
+struct OptionDataRef
+{
+	int allocID;
+	T* val;
+
+	constexpr OptionDataRef(const T& v)
+		: allocID(G.RegisterOption(CRC, v)),
+		val(&G.template RetreiveRefFast<T>(allocID)) {}
+
+	constexpr OptionDataRef()
+		: allocID(0),
+		val(nullptr) {}
+
+	constexpr void Refresh()
+	{
+		if (!allocID)
+			allocID = G.ReserveOption(CRC, T());
+
+		val = &G.template RetreiveRefFast<T>(allocID);
+	}
+
+	constexpr bool TryRefresh()
+	{
+		if (allocID)
+			val = &G.template RetreiveRefFast<T>(allocID);
+		else
+			val = nullptr;
+
+		return !!val;
+	}
+};
+
+template<typename T, crcs_t CRC, auto& G>
+struct OptionDataPtr
+{
+	SettingsGroup* g;
+	int allocID;
+	T* val;
+
+	constexpr OptionDataPtr(const T& v)
+		: g(G),
+		allocID(G->RegisterOption(CRC, v)),
+		val(&G->template RetreiveRefFast<T>(allocID)) {}
+
+	constexpr OptionDataPtr()
+		: g(G),
+		allocID(0),
+		val(nullptr) {}
+
+	constexpr void Refresh()
+	{
+		if (g != G) {
+			g = G;
+			allocID = g->ReserveOption(CRC, T());
+		}
+
+		if (!allocID)
+			allocID = g->ReserveOption(CRC, T());
+
+		val = &g->template RetreiveRefFast<T>(allocID);
+	}
+
+	constexpr bool TryRefresh()
+	{
+		if (g != G) {
+			g = G;
+			allocID = g->TryGetAlloc(CRC);
+		}
+
+		if (allocID)
+			val = &g->template RetreiveRefFast<T>(allocID);
+		else
+			val = nullptr;
+
+		return !!val;
+	}
+};
+
+template<typename T, crcs_t CRC, auto&... Args>
+struct SettingsChain;
+
+template<typename T, crcs_t CRC, auto& G>
+struct SettingsChain<T, CRC, G>
+	: std::conditional<IsPointer(G), OptionDataPtr<T, CRC, G>, OptionDataRef<T, CRC, G>>::type
+{
+	typedef typename std::conditional<IsPointer(G), OptionDataPtr<T, CRC, G>, OptionDataRef<T, CRC, G>>::type BaseType;
+
+	SettingsChain(const T& v)
+		: BaseType(v) {}
+
+	SettingsChain()
+		: BaseType() {}
+
+	constexpr T Get()
+	{
+		BaseType::Refresh();
+		return *BaseType::val;
+	}
+
+	constexpr void Set(const T& val)
+	{
+		BaseType::Refresh();
+		*BaseType::val = val;
+	}
+};
+
+template<typename T, crcs_t CRC, auto& G, auto&... Args>
+struct SettingsChain<T, CRC, G, Args...>
+	: std::conditional<IsPointer(G), OptionDataPtr<T, CRC, G>, OptionDataRef<T, CRC, G>>::type
+
+{
+	typedef typename std::conditional<IsPointer(G), OptionDataPtr<T, CRC, G>, OptionDataRef<T, CRC, G>>::type BaseType;
+
+	SettingsChain(const T& v)
+		: BaseType(v), next(v) {}
+
+	SettingsChain()
+		: BaseType(), next() {}
+
+	constexpr T Get()
+	{
+		if (BaseType::TryRefresh())
+			return *BaseType::val;
+		return next.Get();
+	}
+
+	constexpr void Set(const T& val)
+	{
+		BaseType::Refresh();
+		*BaseType::val = val;
+	}
+
+  private:
+	SettingsChain<T, CRC, Args...> next;
+};
+
+template<typename T, crcs_t CRC, auto&... Chain>
+struct Option : public SettingsChain<T, CRC, Chain...>
+{
+	typedef SettingsChain<T, CRC, Chain...> Container;
+
+	constexpr Option(const T& v)
+		: Container(v) {}
+
+	constexpr Option()
+		: Container() {}
+
+	constexpr operator T()
+	{
+		return Container::Get();
+	}
+
+	template<typename F>
+	constexpr bool operator == (const F& o)
+	{
+		return Container::Get() == o;
+	}
+
+	template<typename F>
+	constexpr bool operator != (const F& o)
+	{
+		return Container::Get() != o;
+	}
+
+	template<typename F>
+	constexpr bool operator > (const F& o)
+	{
+		return Container::Get() > o;
+	}
+
+	template<typename F>
+	constexpr bool operator < (const F& o)
+	{
+		return Container::Get() < o;
+	}
+
+	template<typename F>
+	constexpr bool operator >= (const F& o)
+	{
+		return Container::Get() >= o;
+	}
+
+	template<typename F>
+	constexpr bool operator <= (const F& o)
+	{
+		return Container::Get() <= o;
+	}
+
+	template<typename F>
+	constexpr T operator + (const F& o)
+	{
+		return Container::Get() + o;
+	}
+
+	template<typename F>
+	constexpr T operator - (const F& o)
+	{
+		return Container::Get() - o;
+	}
+
+	template<typename F>
+	constexpr T operator * (const F& o)
+	{
+		return Container::Get() * o;
+	}
+
+	template<typename F>
+	constexpr T operator / (const F& o)
+	{
+		return Container::Get() / o;
+	}
+
+	template<typename F>
+	constexpr auto& operator += (const F& o)
+	{
+		Container::Set(Container::Get() + o);
+		return *this;
+	}
+
+	template<typename F>
+	constexpr auto& operator -= (const F& o)
+	{
+		Container::Set(Container::Get() - o);
+		return *this;
+	}
+
+	template<typename F>
+	constexpr auto& operator *= (const F& o)
+	{
+		Container::Set(Container::Get() * o);
+		return *this;
+	}
+
+	template<typename F>
+	constexpr auto& operator /= (const F& o)
+	{
+		Container::Set(Container::Get() / o);
+		return *this;
+	}
+
+	template<typename F>
+	constexpr auto& operator = (const F& o)
+	{
+		Container::Set(o);
+		return *this;
+	}
+
+};
+
+#endif
