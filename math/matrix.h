@@ -19,7 +19,7 @@ struct matrix
 		return *this;
 	}
 
-	inline auto Inverse()
+	inline auto Inverse() const
 	{
 		auto ret = *this;
 
@@ -42,7 +42,7 @@ struct matrix
 		return ret;
 	}
 
-	inline auto InverseTranspose()
+	inline auto InverseTranspose() const
 	{
 		auto ret = *this;
 
@@ -66,7 +66,7 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<!comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp)
+	inline typename std::enable_if<!comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp) const
 	{
 		T out;
 
@@ -77,7 +77,7 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp)
+	inline typename std::enable_if<comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp) const
 	{
 		T out;
 
@@ -104,7 +104,7 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<!comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp)
+	inline typename std::enable_if<!comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp) const
 	{
 		T out;
 
@@ -116,7 +116,7 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp)
+	inline typename std::enable_if<comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp) const
 	{
 		T out;
 		float w[inp.Yt];
@@ -138,7 +138,7 @@ struct matrix
 	}
 
 	template<typename T>
-	inline auto VectorSoaITransform(const T& inp)
+	inline auto VectorSoaITransform(const T& inp) const
 	{
 		T out;
 		T temp = inp - (vecp<float, 3>)vec.acc[3];
@@ -151,7 +151,7 @@ struct matrix
 	}
 
 	template<typename T, size_t N = T::Yt>
-	inline auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool* flags)
+	inline auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool* flags) const
 	{
 		auto out = VecSoaTransform(vec);
 
@@ -175,7 +175,7 @@ struct matrix
 	}
 
 	template<typename T>
-	inline auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool& status)
+	inline auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool& status) const
 	{
 		auto out = Vector3Transform(vec);
 		if (out[0] <= screen[0] && out[1] <= screen[1]) {

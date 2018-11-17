@@ -9,30 +9,31 @@
 
 #define OPTION(type, name, ...) Option<type, CCRC32(#name), __VA_ARGS__> name
 
-class SettingsGroup
+template<typename Alloc>
+class SettingsGroupBase
 {
   public:
 
-    SettingsGroup() {}
+    SettingsGroupBase() {}
 
-	SettingsGroup(const std::vector<unsigned char>& buf)
+	SettingsGroupBase(const std::vector<unsigned char>& buf)
 	{
 		size_t i = 0;
 		while (i < buf.size()) {
 			idx_t sz = 0;
 			crcs_t crc = 0;
 
-			for (int o = 0; o < sizeof(sz); o++)
+			for (size_t o = 0; o < sizeof(sz); o++)
 				((unsigned char*)&sz)[o] = buf[i + o];
 			i += sizeof(sz);
 
-			for (int o = 0; o < sizeof(crc); o++)
+			for (size_t o = 0; o < sizeof(crc); o++)
 				((unsigned char*)&crc)[o] = buf[i + o];
 			i += sizeof(crc);
 
 			idx_t a = alloc.Alloc(sz);
 
-			for (int o = 0; o < sz; o++)
+			for (size_t o = 0; o < sz; o++)
 				alloc[a + o] = buf[i++];
 
 			map[crc] = a;
@@ -48,13 +49,13 @@ class SettingsGroup
 			idx_t sz = *(idx_t*)(alloc + i.second - sizeof(idx_t));
 			crcs_t crc = i.first;
 
-			for (int o = 0; o < sizeof(sz); o++)
+			for (size_t o = 0; o < sizeof(sz); o++)
 				ret.push_back(((unsigned char*)&sz)[o]);
 
-			for (int o = 0; o < sizeof(crc); o++)
+			for (size_t o = 0; o < sizeof(crc); o++)
 				ret.push_back(((unsigned char*)&crc)[o]);
 
-			for (int o = 0; o < sz; o++)
+			for (size_t o = 0; o < sz; o++)
 				ret.push_back(alloc[i.second + o]);
 		}
 		return ret;
@@ -87,16 +88,16 @@ class SettingsGroup
 	}
 
 	template<typename T>
-	constexpr T& RetreiveRefFast(idx_t idx)
+	constexpr T* RetreivePtrFast(idx_t idx)
 	{
-		return *(T*)(alloc + idx);
+		return (T*)(alloc + idx);
 	}
 
 	template<crcs_t CRC, typename T>
 	inline auto& Set(const T& val)
 	{
 		idx_t idx = RegisterOption(CRC, val);
-		RetreiveRefFast<T>(idx) = val;
+		*RetreivePtrFast<T>(idx) = val;
 		return *this;
 	}
 
@@ -104,13 +105,15 @@ class SettingsGroup
 	inline T Get()
 	{
 		idx_t idx = ReserveOption(CRC, T());
-		return RetreiveRefFast<T>(idx);
+		return *RetreivePtrFast<T>(idx);
 	}
 
-  private:
+  protected:
 	std::unordered_map<crcs_t, idx_t> map;
-	PackedAllocator alloc;
+	Alloc alloc;
 };
+
+using SettingsGroup = SettingsGroupBase<PackedAllocator>;
 
 template<typename T, crcs_t CRC, auto& G>
 struct OptionDataRef
@@ -120,7 +123,7 @@ struct OptionDataRef
 
 	constexpr OptionDataRef(const T& v)
 		: allocID(G.RegisterOption(CRC, v)),
-		val(&G.template RetreiveRefFast<T>(allocID)) {}
+		val(G.template RetreivePtrFast<T>(allocID)) {}
 
 	constexpr OptionDataRef()
 		: allocID(0),
@@ -131,13 +134,13 @@ struct OptionDataRef
 		if (!allocID)
 			allocID = G.ReserveOption(CRC, T());
 
-		val = &G.template RetreiveRefFast<T>(allocID);
+		val = G.template RetreivePtrFast<T>(allocID);
 	}
 
 	constexpr bool TryRefresh()
 	{
 		if (allocID)
-			val = &G.template RetreiveRefFast<T>(allocID);
+			val = G.template RetreivePtrFast<T>(allocID);
 		else
 			val = nullptr;
 
@@ -148,14 +151,14 @@ struct OptionDataRef
 template<typename T, crcs_t CRC, auto& G>
 struct OptionDataPtr
 {
-	SettingsGroup* g;
+	typename std::remove_reference<decltype(G)>::type g;
 	int allocID;
 	T* val;
 
 	constexpr OptionDataPtr(const T& v)
 		: g(G),
 		allocID(G->RegisterOption(CRC, v)),
-		val(&G->template RetreiveRefFast<T>(allocID)) {}
+		val(G->template RetreivePtrFast<T>(allocID)) {}
 
 	constexpr OptionDataPtr()
 		: g(G),
@@ -172,7 +175,7 @@ struct OptionDataPtr
 		if (!allocID)
 			allocID = g->ReserveOption(CRC, T());
 
-		val = &g->template RetreiveRefFast<T>(allocID);
+		val = g->template RetreivePtrFast<T>(allocID);
 	}
 
 	constexpr bool TryRefresh()
@@ -183,7 +186,7 @@ struct OptionDataPtr
 		}
 
 		if (allocID)
-			val = &g->template RetreiveRefFast<T>(allocID);
+			val = g->template RetreivePtrFast<T>(allocID);
 		else
 			val = nullptr;
 
@@ -241,6 +244,12 @@ struct SettingsChain<T, CRC, G, Args...>
 	constexpr void Set(const T& val)
 	{
 		BaseType::Refresh();
+
+		if (!BaseType::val) {
+			next.Set(val);
+			return;
+		}
+
 		*BaseType::val = val;
 	}
 

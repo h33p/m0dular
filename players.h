@@ -90,6 +90,7 @@ Players
 	int unsortIDs[MAX_PLAYERS];
 	float fov[MAX_PLAYERS];
 	int count;
+	float globalTime;
 
 	//Late in the list, since this data is a couple of pages long
 	matrix<3,4> bones[MAX_PLAYERS][MAX_BONES];
