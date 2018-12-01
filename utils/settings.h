@@ -8,6 +8,7 @@
 #include <vector>
 
 #define OPTION(type, name, ...) Option<type, CCRC32(#name), __VA_ARGS__> name
+#define OPTIONDEF(name) decltype(name) name
 
 template<typename Alloc>
 class SettingsGroupBase

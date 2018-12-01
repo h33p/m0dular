@@ -72,8 +72,8 @@ HitboxList
 struct alignas(SIMD_COUNT * 4)
 Players
 {
-	nvec3 boundsStart[PLAYER_CHUNKS];
-	nvec3 boundsEnd[PLAYER_CHUNKS];
+	vec3_t boundsStart[MAX_PLAYERS];
+	vec3_t boundsEnd[MAX_PLAYERS];
 	vec3_t origin[MAX_PLAYERS];
 	vec3_t eyePos[MAX_PLAYERS];
 	vec3_t velocity[MAX_PLAYERS];

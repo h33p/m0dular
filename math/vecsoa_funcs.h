@@ -363,7 +363,7 @@ inline auto& AddCol(int col, const T* val)
 }
 
 
-inline auto Rotate()
+inline auto Rotate() const
 {
 	vecSoa<T, Y, X> ret;
 

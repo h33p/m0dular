@@ -15,9 +15,16 @@ struct AimbotTarget
 	bool future = false;
 };
 
+enum HitboxScanMode_t : unsigned char
+{
+	SCAN_NONE = 0,
+	SCAN_SIMPLE = 1,
+	SCAN_MULTIPOINT = 2
+};
+
 namespace Aimbot
 {
-	AimbotTarget RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, bool hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)]);
+	AimbotTarget RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, unsigned char hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)]);
 }
 
 #endif

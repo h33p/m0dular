@@ -89,18 +89,19 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 			initDerefIdx = idx;
 
 			if (!inRelDeref)
-			operations.emplace_back(pOperation((*p == '*') ? 0 : 3, idx));
+				operations.emplace_back(pOperation((*p == '*') ? 0 : 3, idx));
 			p++;
 
 			while (*p == '+' || *p == '-' || *p == '*' || *p == '^') {
 				if (*p == '*')
 					operations.emplace_back(pOperation(*p++ == '*' ? 0 : 1));
-				if (*p == '*')
+				else if (*p == '^')
 					operations.emplace_back(pOperation(*p++ == '^' ? 3 : 1));
 				else {
 					pOperation op = pOperation();
 					if (*p == '+' || *p == '-')
 						op.offset = strtol(p, &p, 10);
+					//Compress the offset operation into a dereference
 					op.op = (*p == '*') ? 0 : ((*p == '^') ? 3 : 1);
 					if (*p == '*' || *p == '^')
 						p++;

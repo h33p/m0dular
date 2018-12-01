@@ -1,6 +1,7 @@
 #include "threading.h"
 
 static LList<struct Job> jobs;
+thread_local int Threading::threadID = -1;
 
 uint64_t Threading::_QueueJob(JobFn function, void* data, bool ref)
 {
@@ -14,6 +15,8 @@ uint64_t Threading::_QueueJob(JobFn function, void* data, bool ref)
 static void* __stdcall ThreadLoop(void* t)
 {
 	struct JobThread* thread = (struct JobThread*)t;
+
+	Threading::threadID = thread->id;
 
 	struct Job job;
 	thread->isRunning = true;

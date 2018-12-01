@@ -90,12 +90,36 @@ struct matrix
 	}
 
 	template<typename T>
-	inline auto Vector3ITransform(T inp)
+	inline auto Vector3ITransform(T inp) const
 	{
 		T out;
 
 		auto vecRot = vec.Rotate();
 		inp -= vecRot[3];
+
+		for (size_t i = 0; i < 3; i++)
+			out[i] = inp.Dot(vecRot[i]);
+
+		return out;
+	}
+
+	template<typename T>
+	inline T Vector3Rotate(const T& inp) const
+	{
+		T out;
+
+		for (size_t i = 0; i < 3; i++)
+			out[i] = inp.Dot(vec[i]);
+
+		return out;
+	}
+
+	template<typename T>
+	inline T Vector3IRotate(const T& inp) const
+	{
+		T out;
+
+		auto vecRot = vec.Rotate();
 
 		for (size_t i = 0; i < 3; i++)
 			out[i] = inp.Dot(vecRot[i]);

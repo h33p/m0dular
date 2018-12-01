@@ -145,6 +145,7 @@ struct JobThread
 namespace Threading
 {
 	extern unsigned int numThreads;
+	extern thread_local int threadID;
 	uint64_t _QueueJob(JobFn function, void* data, bool ref = false);
 	void InitThreads();
 	int EndThreads();
