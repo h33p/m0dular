@@ -93,6 +93,27 @@
 	}
 
 
+
+#define SOA_VEC_OP(OP)									\
+	template<typename mainType, template <typename F, size_t Y2> class type>	\
+	friend constexpr auto operator OP(mainType v, const type<T, Y>& ov) \
+	{													\
+		for (size_t i = 0; i < X; i++)					\
+			for (size_t o = 0; o < Y; o++)				\
+				v.v[i][o] = v.v[i][o] OP ov[o];			\
+		return v;										\
+	}													\
+														\
+	template<template <typename F, size_t Y2> class type>	\
+	constexpr auto& operator OP##=(const type<T, Y>& ov)	\
+	{													\
+		for (size_t i = 0; i < X; i++)					\
+			for (size_t o = 0; o < Y; o++)				\
+				v[i][o] OP##= ov[o];					\
+		return *this;									\
+	}
+
+
 #define WIDE_OP(type, OP)							\
 	friend constexpr auto operator OP(type v, const type& ov)	\
 	{													\
@@ -181,6 +202,21 @@
 	}											\
 												\
 	constexpr auto& operator =(const T* ov)		\
+	{											\
+		for (size_t i = 0; i < X; i++)			\
+			for (size_t o = 0; o < Y; o++)		\
+				v[i][o] = ov[o];				\
+		return *this;							\
+	}
+
+#define DEFINE_SOA_VEC_OPS()					\
+	SOA_VEC_OP(+);								\
+	SOA_VEC_OP(-);								\
+	SOA_VEC_OP(*);								\
+	SOA_VEC_OP(/);								\
+												\
+	template<template <typename F, size_t Y2> class type>	\
+	constexpr auto& operator =(const type<T, Y>& ov)	\
 	{											\
 		for (size_t i = 0; i < X; i++)			\
 			for (size_t o = 0; o < Y; o++)		\

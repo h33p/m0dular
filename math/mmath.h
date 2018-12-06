@@ -137,6 +137,26 @@ constexpr size_t AlignUp(size_t inp)
 	return size_t(1) << (sizeof(size_t) * 8 - Clz(inp));
 }
 
+
+template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* p = nullptr>
+constexpr T Modulo(const T x, const T y)
+{
+    return (x < T() ? T(-1) : T(1)) * (
+		(x < T() ? -x : x) -
+	    (long long)((x / y < T() ? -x / y : x / y)) * (y < T() ? -y : y));
+}
+
+// For non-floating point types
+
+template<typename T>
+using TypeToCast = typename std::conditional<std::is_floating_point<T>::value, int, T>::type;
+
+template<typename T, typename std::enable_if<!std::is_floating_point<T>::value>::type* p = nullptr>
+constexpr T Modulo(const T x, const T y)
+{
+    return (TypeToCast<T>)(x) % (TypeToCast<T>)(y);
+}
+
 template<typename T>
 [[deprecated("Duplicate function")]]
 inline T TMod(T val, T lim)
@@ -144,11 +164,22 @@ inline T TMod(T val, T lim)
 	return std::remainder(val, lim);
 }
 
-inline float NormalizeFloat(float result, float start, float end)
+constexpr float NormalizeFloat(float result, float start, float end)
 {
-	result = std::remainder(result - start, end - start);
+	result = Modulo(result - start, end - start);
 
 	if (result < 0.f)
+		result += end - start;
+
+	return result + start;
+}
+
+template<typename T>
+constexpr T NormalizeInRange(T result, T start, T end)
+{
+	result = Modulo(result - start, end - start);
+
+	if (result < 0)
 		result += end - start;
 
 	return result + start;
@@ -166,6 +197,25 @@ constexpr F GetElementAt(size_t id, F arg, T... args)
 {
 	constexpr size_t sz = sizeof...(args);
 	return (id && sz) ? GetElementAt<F>(id - 1, args...) : arg;
+}
+
+template <typename T>
+constexpr T TrigSeries(T val, T sum, T n, int i, int s, T exp)
+{
+	return std::abs(exp * s / n) > std::numeric_limits<T>::epsilon() ? TrigSeries(val, sum + exp * s / n, n * i * (i + 1), i + 2, -s, exp * val * val) : sum;
+}
+
+template<typename T>
+constexpr T ConstSin(T val)
+{
+	val = NormalizeInRange(val, T(-M_PI), T(M_PI));
+	return TrigSeries(val, val, T(6), 4, -1, val * val * val);
+}
+
+template<typename T>
+constexpr T ConstCos(T val)
+{
+	return ConstSin(val + M_PI / 2);
 }
 
 constexpr float RAD2DEG = 180.0 / M_PI;

@@ -26,6 +26,17 @@ constexpr SOA_TYPE(F... args) : v()
 			v[i][o] = GetElementAt(o % elementCount, args...);
 }
 
+template<size_t Y2>
+inline auto& ColumnVec(int col) const
+{
+	return *(vecb<T, Y2>*)v[col];
+}
+
+inline auto& ColumnVec(int col) const
+{
+	return ColumnVec<Y>(col);
+}
+
 //Micro-optimized version for 4 sized vector chunks since
 //Clang did not want to generate SIMD code on a normal loop
 template<size_t Q = Y, size_t D = X>
@@ -107,14 +118,20 @@ inline T AddedUpTotal()
 }
 
 //Constant array functions
-template <size_t D>
-inline void Dot(const SOA_TYPE& ov, T val[Y]) const
+template <typename F, size_t D, size_t Y2>
+inline void Dot(const F& ov, T val[Y2]) const
 {
 	SOA_TYPE nv = *this * ov;
 	nv.AddUp<D>();
 
-	for (size_t i = 0; i < Y; i++)
+	for (size_t i = 0; i < Y2; i++)
 		val[i] = nv[0][i];
+}
+
+template <size_t D>
+inline void Dot(const SOA_TYPE& ov, T val[Y]) const
+{
+    Dot<SOA_TYPE, D, Y>(ov, val);
 }
 
 template <size_t D>
@@ -138,9 +155,15 @@ inline auto& Sqrt()
 	return *this;
 }
 
+template<typename F, size_t Y2>
+inline void Dot(const F& o, T val[Y2]) const
+{
+	Dot<F, X, Y2>(o, val);
+}
+
 inline void Dot(const SOA_TYPE& o, T val[Y]) const
 {
-	Dot<X>(o, val);
+	Dot<SOA_TYPE, X, Y>(o, val);
 }
 
 inline void LengthSqr(T val[Y]) const
@@ -292,7 +315,40 @@ inline auto Transform(const Q* inp) const
 	return ret;
 }
 
-inline auto& AssignCol(int col, const vecb<T, Y>& vec)
+constexpr auto& AssignRow(int row, const vecb<T, X>& vec)
+{
+	for (size_t i = 0; i < X; i++)
+		v[i][row] = vec[i];
+
+	return *this;
+}
+
+constexpr auto& AddRow(int row, const vecb<T, X>& vec)
+{
+	for (size_t i = 0; i < X; i++)
+		v[i][row] += vec[i];
+
+	return *this;
+}
+
+constexpr auto& AddRow(int row, const vecp<T, X>& vec)
+{
+	return AddRow(row, *(vecb<T, X>*)&vec);
+}
+
+constexpr auto& AddRow(int row, T val)
+{
+	for (int i = 0; i < X; i++)
+		v[i][row] += val;
+}
+
+constexpr auto& AddRow(int row, const T* val)
+{
+	for (int i = 0; i < X; i++)
+		v[i][row] *= val[i];
+}
+
+constexpr auto& AssignCol(int col, const vecb<T, Y>& vec)
 {
 	for (size_t i = 0; i < Y; i++)
 		v[col][i] = vec[i];
@@ -300,19 +356,19 @@ inline auto& AssignCol(int col, const vecb<T, Y>& vec)
 	return *this;
 }
 
-inline auto& AssignCol(int col, const vecp<T, Y>& vec)
+constexpr auto& AssignCol(int col, const vecp<T, Y>& vec)
 {
 	return AssignCol(col, (const vecb<T, Y>&)vec);
 }
 
-inline auto& AssignCol(int col, T val)
+constexpr auto& AssignCol(int col, T val)
 {
 	vecb<T, Y> vec;
 	return AssignCol(col, vec.Assign(val));
 }
 
 
-inline auto& MulCol(int col, const vecb<T, Y>& vec)
+constexpr auto& MulCol(int col, const vecb<T, Y>& vec)
 {
 	for (size_t i = 0; i < Y; i++)
 		v[col][i] *= vec[i];
@@ -320,25 +376,25 @@ inline auto& MulCol(int col, const vecb<T, Y>& vec)
 	return *this;
 }
 
-inline auto& MulCol(int col, const vecp<T, Y>& vec)
+constexpr auto& MulCol(int col, const vecp<T, Y>& vec)
 {
 	return MulCol(col, (vecb<T, Y>)vec);
 }
 
-inline auto& MulCol(int col, T val)
+constexpr auto& MulCol(int col, T val)
 {
 	for (int i = 0; i < Y; i++)
 		v[col][i] *= val;
 }
 
-inline auto& MulCol(int col, const T* val)
+constexpr auto& MulCol(int col, const T* val)
 {
 	for (int i = 0; i < Y; i++)
 		v[col][i] *= val[i];
 }
 
 
-inline auto& AddCol(int col, const vecb<T, Y>& vec)
+constexpr auto& AddCol(int col, const vecb<T, Y>& vec)
 {
 	for (size_t i = 0; i < Y; i++)
 		v[col][i] += vec[i];
@@ -346,20 +402,21 @@ inline auto& AddCol(int col, const vecb<T, Y>& vec)
 	return *this;
 }
 
-inline auto& AddCol(int col, const vecp<T, Y>& vec)
+constexpr auto& AddCol(int col, const vecp<T, Y>& vec)
 {
-	return MulCol(col, (vecb<T, Y>)vec);
+	return AddCol(col, (vecb<T, Y>)vec);
 }
 
-inline auto& AddCol(int col, T val)
+constexpr auto& AddCol(int col, T val)
 {
 	for (int i = 0; i < Y; i++)
-		v[col][i] *= val;
+		v[col][i] += val;
 }
-inline auto& AddCol(int col, const T* val)
+
+constexpr auto& AddCol(int col, const T* val)
 {
 	for (int i = 0; i < Y; i++)
-		v[col][i] *= val[i];
+		v[col][i] += val[i];
 }
 
 

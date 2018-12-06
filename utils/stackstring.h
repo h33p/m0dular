@@ -36,7 +36,7 @@ struct StackString
 	static constexpr int len = slen / sizeof(stt) + 1;
 	static constexpr int len2 = slen / sizeof(stt);
 
-	volatile stt stack[len];
+	char stack[len * sizeof(stt)];
 	volatile stt stack2[len];
 	volatile stt stack2s[len/2];
 	volatile stt stack2e[len2 - len/2];
@@ -56,14 +56,14 @@ struct StackString
 		unroll_read<len / 2>((rstt*)stack, (rstt*)stack2s, len / 2);
 
 		for (int i = (len - 1) * sizeof(rstt); i < slen; i++)
-			((char*)stack)[i] = ((char*)stack2)[i];
+			stack[i] = ((char*)stack2)[i];
 
 	}
 
 	__alwaysinline
-	const char* val() const
+	constexpr const char* val() const
 	{
-		return (char*)stack;
+		return stack;
 	}
 
 	inline operator char*()
@@ -71,12 +71,12 @@ struct StackString
 		return (char*)val();
 	}
 
-	inline operator const char*() const
+	constexpr operator const char*() const
 	{
 		return val();
 	}
 
-	inline operator const char*()
+	constexpr operator const char*()
 	{
 		return val();
 	}

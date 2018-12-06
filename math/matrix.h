@@ -9,7 +9,7 @@ struct matrix
 	vecSoa<float, X, Y> vec;
 
 	template <size_t X2, size_t Y2>
-	inline auto& operator =(matrix<X2, Y2>& ov)
+	inline auto& operator=(const matrix<X2, Y2>& ov)
 	{
 		constexpr size_t MX = X2 < X ? X2 : X;
 		constexpr size_t MY = Y2 < Y ? Y2 : Y;
@@ -17,6 +17,109 @@ struct matrix
 			for (size_t o = 0; o < MY; o++)
 				vec[i][o] = ov.vec[i][o];
 		return *this;
+	}
+
+	template <size_t X2, size_t Y2>
+	inline auto operator*(const matrix<X2, Y2>& ov)
+	{
+		constexpr size_t MinX = Y2 < X ? Y2 : X;
+		constexpr size_t MinY = X2 < Y ? X2 : Y;
+		constexpr size_t CompS = MinX < MinY ? MinX : MinY;
+
+		constexpr size_t MX = X2 < X ? X2 : X;
+		constexpr size_t MY = Y2 < Y ? Y2 : Y;
+
+		constexpr size_t SX = MX < MinX ? MinX : MX;
+		constexpr size_t SY = MY < MinY ? MinY : MY;
+
+		matrix<SX, SY> result;
+
+		for (size_t i = 0; i < MinX; i++)
+			for (size_t o = 0; o < MinY; o++)
+				result[i][o] = 0;
+
+		for (size_t i = 0; i < MinX; i++)
+			for (size_t o = 0; o < MinY; o++) {
+				for (size_t u = 0; u < CompS; u++)
+					result[i][o] += vec[i][u] * ov[u][o];
+			}
+			//vec.template Dot<vecb<float, CompS>, CompS, CompS>(ov.vec.template ColumnVec<CompS>(i), result[i]);
+
+		//Copy over the remainding data that was not be multiplied
+		for (size_t i = CompS; i < SX; i++)
+			for (size_t o = 0; o < SY; o++)
+				result[i][o] = vec[i][o];
+
+		for (size_t i = 0; i < SX; i++)
+			for (size_t o = CompS; o < SY; o++)
+				result[i][o] = vec[i][o];
+
+		return result;
+	}
+
+	template <size_t X2, size_t Y2>
+	inline auto& operator*=(const matrix<X2, Y2>& ov)
+	{
+	    *this = *this * ov;
+		return *this;
+	}
+
+	template<typename T>
+	static constexpr auto GetMatrix(const T& angles, bool fromDegrees = false)
+	{
+		matrix<X, Y> vec;
+
+		const int VP = 0;
+		const int VY = 1;
+		const int VR = 2;
+
+		float s[3] = {0}, c[3] = {0};
+
+		auto it = angles;
+		if (fromDegrees)
+			it *= DEG2RAD;
+
+		for (size_t i = 0; i < 3; i++)
+			s[i] = ConstSin(it[i]);
+
+		for (size_t i = 0; i < 3; i++)
+			c[i] = ConstCos(it[i]);
+
+		vec[0][0] = c[VP] * c[VY];
+		vec[1][0] = c[VP] * s[VY];
+		vec[2][0] = -s[VP];
+
+		vec[0][1] = s[VR] * s[VP] * c[VY] + c[VR] * s[VY];
+		vec[1][1] = s[VR] * s[VP] * s[VY] - c[VR] * c[VY];
+		vec[2][1] = s[VR] * c[VP];
+
+		vec[0][2] = c[VR] * s[VP] * c[VY] + s[VR] * s[VY];
+		vec[1][2] = c[VR] * s[VP] * s[VY] - s[VR] * c[VY];
+		vec[2][2] = c[VR] * c[VP];
+
+		return vec;
+	}
+
+	inline vec3_t GetAngles(bool toDegrees = false)
+	{
+		vec3_t fwd = (vec3_t)vec.acc[0];
+		vec3_t left = (vec3_t)vec.acc[1];
+		vec3_t up = (vec3_t)vec.acc[2];
+		vec3_t ret(0);
+
+		float xyLen = fwd.Length<2>();
+
+		if (xyLen > 0.001f) {
+			ret[0] = atan2f(-fwd[2], xyLen);
+			ret[1] = atan2f(fwd[1], fwd[0]);
+			ret[2] = atan2f(left[2], up[2]);
+		} else {
+			ret[0] = atan2f(-fwd[2], xyLen);
+			ret[1] = atan2f(-left[0], left[1]);
+			ret[2] = 0;
+		}
+
+		return toDegrees ? ret * RAD2DEG : ret;
 	}
 
 	inline auto Inverse() const
@@ -66,9 +169,9 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<!comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp) const
+	constexpr typename std::enable_if<!comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp) const
 	{
-		T out;
+		T out(0);
 
 		for (size_t i = 0; i < 3; i++)
 			out[i] = inp.Dot(vec[i]) + vec[i][3];
@@ -77,9 +180,9 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp) const
+	constexpr typename std::enable_if<comp_if<Xt, 4>::value, T>::type Vector3Transform(const T& inp) const
 	{
-		T out;
+		T out(0);
 
 		for (size_t i = 0; i < 3; i++)
 			out[i] = inp.Dot(vec[i]) + vec[i][3];
@@ -90,9 +193,9 @@ struct matrix
 	}
 
 	template<typename T>
-	inline auto Vector3ITransform(T inp) const
+	constexpr auto Vector3ITransform(T inp) const
 	{
-		T out;
+		T out(0);
 
 		auto vecRot = vec.Rotate();
 		inp -= vecRot[3];
@@ -104,9 +207,9 @@ struct matrix
 	}
 
 	template<typename T>
-	inline T Vector3Rotate(const T& inp) const
+	constexpr T Vector3Rotate(const T& inp) const
 	{
-		T out;
+		T out(0);
 
 		for (size_t i = 0; i < 3; i++)
 			out[i] = inp.Dot(vec[i]);
@@ -115,9 +218,9 @@ struct matrix
 	}
 
 	template<typename T>
-	inline T Vector3IRotate(const T& inp) const
+	constexpr T Vector3IRotate(const T& inp) const
 	{
-		T out;
+		T out(0);
 
 		auto vecRot = vec.Rotate();
 
@@ -128,9 +231,9 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<!comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp) const
+	constexpr typename std::enable_if<!comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp) const
 	{
-		T out;
+		T out(0);
 
 		for (size_t i = 0; i < 3; i++)
 			for (size_t o = 0; o < inp.Yt; o++)
@@ -140,9 +243,9 @@ struct matrix
 	}
 
 	template<typename T, size_t Xt = X>
-	inline typename std::enable_if<comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp) const
+	constexpr typename std::enable_if<comp_if<Xt, 4>::value, T>::type VecSoaTransform(const T& inp) const
 	{
-		T out;
+		T out(0);
 		float w[inp.Yt];
 
 		for (size_t i = 0; i < 3; i++)
@@ -162,9 +265,9 @@ struct matrix
 	}
 
 	template<typename T>
-	inline auto VectorSoaITransform(const T& inp) const
+	constexpr auto VectorSoaITransform(const T& inp) const
 	{
-		T out;
+		T out(0);
 		T temp = inp - (vecp<float, 3>)vec.acc[3];
 
 		for (size_t i = 0; i < 3; i++)
@@ -175,7 +278,7 @@ struct matrix
 	}
 
 	template<typename T, size_t N = T::Yt>
-	inline auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool* flags) const
+	constexpr auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool* flags) const
 	{
 		auto out = VecSoaTransform(vec);
 
@@ -199,7 +302,7 @@ struct matrix
 	}
 
 	template<typename T>
-	inline auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool& status) const
+	constexpr auto WorldToScreen(const T& vec, const vecb<float, 2>& screen, bool& status) const
 	{
 		auto out = Vector3Transform(vec);
 		if (out[0] <= screen[0] && out[1] <= screen[1]) {
@@ -216,9 +319,14 @@ struct matrix
 		return out;
 	}
 
-	inline float* operator[](int idx)
+	constexpr float* operator[](int idx)
 	{
-		return vec[idx];
+		return vec.v[idx];
+	}
+
+	constexpr const float* operator[](int idx) const
+	{
+		return vec.v[idx];
 	}
 };
 

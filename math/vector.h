@@ -87,7 +87,7 @@ struct vecb
 #define VEC_TYPE vecb
 #include "vec_funcs.h"
 
-	constexpr bool operator==(vecb& o)
+	constexpr bool operator==(const vecb& o)
 	{
 		for (size_t i = 0; i < N; i++)
 			if (v[i] != o.v[i])
@@ -95,7 +95,7 @@ struct vecb
 		return true;
 	}
 
-	constexpr bool operator!=(vecb& o)
+	constexpr bool operator!=(const vecb& o)
 	{
 		return !operator==(o);
 	}
@@ -148,7 +148,7 @@ struct vecp
 #include "vec_funcs.h"
 
 
-	constexpr bool operator==(vecp& o)
+	constexpr bool operator==(const vecp& o)
 	{
 		for (size_t i = 0; i < N; i++)
 			if (v[i] != o.v[i])
@@ -156,7 +156,7 @@ struct vecp
 		return true;
 	}
 
-	constexpr bool operator!=(vecp& o)
+	constexpr bool operator!=(const vecp& o)
 	{
 		return !operator==(o);
 	}
@@ -218,6 +218,7 @@ struct vec3soa
 	};
 
 	DEFINE_SOA_OPS(vec3soa);
+	DEFINE_SOA_VEC_OPS();
 
 #define SOA_TYPE vec3soa
 #include "vecsoa_funcs.h"
@@ -289,6 +290,7 @@ struct vecSoa
 	};
 
 	DEFINE_SOA_OPS(vecSoa);
+	DEFINE_SOA_VEC_OPS();
 
 #define SOA_TYPE vecSoa
 #include "vecsoa_funcs.h"
@@ -307,12 +309,12 @@ struct vecSoa
 		return !operator==(o);
 	}
 
-	constexpr T* operator[](int idx)
+    constexpr T* operator[](int idx)
 	{
 		return v[idx];
 	}
 
-	constexpr const T* operator[](int idx) const
+    constexpr const T* operator[](int idx) const
 	{
 		return v[idx];
 	}

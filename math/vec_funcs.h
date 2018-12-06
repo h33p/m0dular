@@ -16,7 +16,7 @@ constexpr VEC_TYPE(F... args) : v()
 {
 	constexpr size_t elementCount = sizeof...(args);
 	for (size_t i = 0; i < N; i++)
-		v[i] = GetElementAt(i % elementCount, args...);
+		v[i] = GetElementAt<T>(i % elementCount, args...);
 }
 
 inline auto& Assign(T val)
@@ -28,7 +28,7 @@ inline auto& Assign(T val)
 
 
 template <size_t D>
-inline T Dot(const VEC_TYPE& o) const
+constexpr T Dot(const VEC_TYPE& o) const
 {
 	T val = 0;
 	for (size_t i = 0; i < D; i++)
@@ -37,13 +37,22 @@ inline T Dot(const VEC_TYPE& o) const
 }
 
 template <size_t D>
-inline T LengthSqr() const
+constexpr T Dot(const T* o) const
+{
+	T val = 0;
+	for (size_t i = 0; i < D; i++)
+		val += v[i] * o[i];
+	return val;
+}
+
+template <size_t D>
+constexpr T LengthSqr() const
 {
 	return Dot<D>(*this);
 }
 
 template <size_t D>
-inline T Length() const
+constexpr T Length() const
 {
 	return sqrt(Dot<D>(*this));
 }
@@ -64,22 +73,22 @@ inline auto& NormalizeAngles(T start, T end)
 	return *this;
 }
 
-inline T Dot(const VEC_TYPE& o) const
+constexpr T Dot(const VEC_TYPE& o) const
 {
 	return Dot<N>(o);
 }
 
-inline T Dot(const T* o) const
+constexpr T Dot(const T* o) const
 {
-	return Dot(*(const VEC_TYPE*)o);
+	return Dot<N>(o);
 }
 
-inline T LengthSqr() const
+constexpr T LengthSqr() const
 {
 	return LengthSqr<N>();
 }
 
-inline T Length() const
+constexpr T Length() const
 {
 	return Length<N>();
 }
@@ -114,6 +123,17 @@ inline T DistTo(const VEC_TYPE& o) const
 	return DistTo<N>(o);
 }
 
+template <size_t D>
+constexpr T DistToSqr(const VEC_TYPE& o) const
+{
+	return (*this - o).template LengthSqr<D>();
+}
+
+constexpr T DistToSqr(const VEC_TYPE& o) const
+{
+	return DistToSqr<N>(o);
+}
+
 inline auto DirToRay(const VEC_TYPE& a, const VEC_TYPE& b) const
 {
 	auto c = *this - a;
@@ -134,8 +154,22 @@ inline auto DirToLine(const VEC_TYPE& a, const VEC_TYPE& b) const
 	return a + t * d;
 }
 
+constexpr auto GetRight() const
+{
+	if (v[0] == v[1] == 0)
+		return VEC_TYPE(0, -1, 0);
+	return this->Cross(VEC_TYPE(0, 0, 1));
+}
+
+constexpr auto GetUp() const
+{
+	if (v[0] == v[1] == 0)
+		return VEC_TYPE(-v[2], 0, 0);
+	return GetRight().Cross(*this);
+}
+
 template<size_t Q = N>
-inline typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>>::type
+constexpr typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>>::type
 Cross(const VEC_TYPE& o) const
 {
 	VEC_TYPE<T, 3> ret;

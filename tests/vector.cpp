@@ -1,7 +1,14 @@
 #include <stdio.h>
 #include "../math/vector.h"
+#include "../math/matrix.h"
 #include <stdlib.h>
 #include <time.h>
+
+constexpr vec3_t rotation = vec3_t(0, M_PI / 2, 0);
+constexpr matrix<3, 4> rotationMatrix = matrix<3, 4>::GetMatrix(rotation);
+constexpr vec3_t rotatedVec = rotationMatrix.Vector3Rotate(vec3_t(1, 0, 0));
+constexpr vec3_t expectedVec = vec3_t(0, 1, 0);
+static_assert(rotatedVec.DistToSqr(expectedVec) < 0.1);
 
 int exit_error(int i)
 {
