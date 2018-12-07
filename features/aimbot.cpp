@@ -256,7 +256,7 @@ static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_
 
 				if (d->target.id >= 0 && d->target.fov < lowestFov) {
 					lowestFov = d->target.fov;
-					d->target.backTick = i;
+					d->target.backTick = i + o;
 					d->target.future = true;
 					*target = d->target;
 					targetPlayers = &players;
@@ -313,7 +313,7 @@ static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_
 
 			if (d->target.id >= 0 && (d->target.fov < lowestFov || !Tracing::VerifyTarget(targetPlayers, target->id, backtrackMask))) {
 				lowestFov = d->target.fov;
-				d->target.backTick = i;
+				d->target.backTick = i + u;
 				d->target.future = false;
 				*target = d->target;
 				targetPlayers = &players;

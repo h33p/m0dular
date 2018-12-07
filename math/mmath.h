@@ -199,10 +199,16 @@ constexpr F GetElementAt(size_t id, F arg, T... args)
 	return (id && sz) ? GetElementAt<F>(id - 1, args...) : arg;
 }
 
+template<typename T>
+constexpr T Abs(T val)
+{
+	return val < 0 ? -val : val;
+}
+
 template <typename T>
 constexpr T TrigSeries(T val, T sum, T n, int i, int s, T exp)
 {
-	return std::abs(exp * s / n) > std::numeric_limits<T>::epsilon() ? TrigSeries(val, sum + exp * s / n, n * i * (i + 1), i + 2, -s, exp * val * val) : sum;
+	return Abs(exp * s / n) > std::numeric_limits<T>::epsilon() ? TrigSeries(val, sum + exp * s / n, n * i * (i + 1), i + 2, -s, exp * val * val) : sum;
 }
 
 template<typename T>
