@@ -218,7 +218,7 @@ struct vec3soa
 	};
 
 	DEFINE_SOA_OPS(vec3soa);
-	DEFINE_SOA_VEC_OPS();
+	DEFINE_SOA_VEC_OPS(vec3soa);
 
 #define SOA_TYPE vec3soa
 #include "vecsoa_funcs.h"
@@ -290,7 +290,7 @@ struct vecSoa
 	};
 
 	DEFINE_SOA_OPS(vecSoa);
-	DEFINE_SOA_VEC_OPS();
+	DEFINE_SOA_VEC_OPS(vecSoa);
 
 #define SOA_TYPE vecSoa
 #include "vecsoa_funcs.h"

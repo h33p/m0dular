@@ -200,6 +200,18 @@ constexpr F GetElementAt(size_t id, F arg, T... args)
 }
 
 template<typename T>
+constexpr T Max(T a, T b)
+{
+	return a > b ? a : b;
+}
+
+template<typename T>
+constexpr T Min(T a, T b)
+{
+	return a < b ? a : b;
+}
+
+template<typename T>
 constexpr T Abs(T val)
 {
 	return val < 0 ? -val : val;

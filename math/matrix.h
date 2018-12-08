@@ -67,7 +67,7 @@ struct matrix
 	template<typename T>
 	static constexpr auto GetMatrix(const T& angles, bool fromDegrees = false)
 	{
-		matrix<X, Y> vec;
+		matrix<X, Y> vec = {vecSoa<float, X, Y>()};
 
 		const int VP = 0;
 		const int VY = 1;

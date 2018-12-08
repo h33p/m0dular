@@ -39,8 +39,8 @@ inline auto& ColumnVec(int col) const
 
 //Micro-optimized version for 4 sized vector chunks since
 //Clang did not want to generate SIMD code on a normal loop
-template<size_t Q = Y, size_t D = X>
-inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int dim, T vv[D][Q])
+template<typename F = T, size_t Q = Y, size_t D = X>
+inline typename std::enable_if<max_sse<F, Q>::value, void>::type AddUpDim(int dim, F vv[D][Q])
 {
 	if (!dim)
 		return;
@@ -50,11 +50,11 @@ inline typename std::enable_if<max_sse<T, Q>::value, void>::type AddUpDim(int di
 	a = _mm_add_ps(a, b);
 	_mm_storeu_ps(vv[dim-1], a);
 
-	AddUpDim(--dim, vv);
+	AddUpDim<T, Y, X>(--dim, vv);
 }
 
-template<size_t Q = Y, size_t D = X>
-inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int dim, T vv[D][Q])
+template<typename F = T, size_t Q = Y, size_t D = X>
+inline typename std::enable_if<max_avx<F, Q>::value, void>::type AddUpDim(int dim, F vv[D][Q])
 {
 	if (!dim)
 		return;
@@ -64,11 +64,11 @@ inline typename std::enable_if<max_avx<T, Q>::value, void>::type AddUpDim(int di
 	a = _mm256_add_ps(a, b);
 	_mm256_storeu_ps(vv[dim-1], a);
 
-	AddUpDim(--dim, vv);
+	AddUpDim<T, Y, X>(--dim, vv);
 }
 
-template<size_t Q = Y, size_t D = X>
-inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value), void>::type AddUpDim(int dim, T vv[X][Q])
+template<typename F = T, size_t Q = Y, size_t D = X>
+inline typename std::enable_if<(!max_sse<F, Q>::value && !max_avx<F, Q>::value), void>::type AddUpDim(int dim, F vv[X][Q])
 {
 	if (!dim)
 		return;
@@ -81,14 +81,14 @@ inline typename std::enable_if<(!max_sse<T, Q>::value && !max_avx<T, Q>::value),
 template <size_t D>
 inline auto& AddUp()
 {
-	AddUpDim(D-1, v);
+	AddUpDim<T, Y, X>(D-1, v);
 	return *this;
 }
 
 template <size_t D>
 inline auto& AddUpTotal()
 {
-	AddUpDim(D-1, v);
+	AddUpDim<T, Y, X>(D-1, v);
 
 	for (size_t i = D - 1; i > 0; i--)
 		v[0][i - 1] += v[0][i];
@@ -104,7 +104,7 @@ inline T AddedUpTotal()
 	for (size_t o = 0; o < Y; o++)
 		temp[D - 1][o] = 0;
 
-	AddUpDim(D - 1, temp);
+	AddUpDim<T, Y, X>(D - 1, temp);
 
 	for (size_t i = Y - 1; i > 0; i--)
 		temp[0][i - 1] += temp[0][i];

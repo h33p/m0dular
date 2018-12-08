@@ -94,8 +94,8 @@
 
 
 
-#define SOA_VEC_OP(OP)									\
-	template<typename mainType, template <typename F, size_t Y2> class type>	\
+#define SOA_VEC_OP(mainType, OP)						\
+	template<template <typename F, size_t Y2> class type>	\
 	friend constexpr auto operator OP(mainType v, const type<T, Y>& ov) \
 	{													\
 		for (size_t i = 0; i < X; i++)					\
@@ -209,11 +209,11 @@
 		return *this;							\
 	}
 
-#define DEFINE_SOA_VEC_OPS()					\
-	SOA_VEC_OP(+);								\
-	SOA_VEC_OP(-);								\
-	SOA_VEC_OP(*);								\
-	SOA_VEC_OP(/);								\
+#define DEFINE_SOA_VEC_OPS(mainType)			\
+	SOA_VEC_OP(mainType, +);								\
+	SOA_VEC_OP(mainType, -);								\
+	SOA_VEC_OP(mainType, *);								\
+	SOA_VEC_OP(mainType, /);								\
 												\
 	template<template <typename F, size_t Y2> class type>	\
 	constexpr auto& operator =(const type<T, Y>& ov)	\
