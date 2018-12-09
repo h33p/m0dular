@@ -13,6 +13,7 @@ int tid = 0;
 
 static vec3_t shootAngles;
 static int minDamage = 50;
+float* pointScaleVal = nullptr;
 
 #ifdef AIMBOT_THREADING
 static Semaphore threadSem;
@@ -37,7 +38,7 @@ struct AimbotLoopData {
 
 	std::vector<mvec3> traceEndSOA;
 	std::vector<int> hitboxIDsSOA;
-	std::vector<int> fovListSOA;
+	std::vector<float> fovListSOA;
 	std::vector<int> traceOutputsSOA;
 };
 
@@ -82,41 +83,45 @@ static bool CompareDataRage(AimbotLoopData* d, int out, vec3_t targetVec, int bo
 }
 
 bool doMultipoint = true;
-float pointScaleVal = 0.98f;
 
 static int ProcessAimPointsSIMD(AimbotLoopData* d)
 {
 	Tracing::TracePointListSIMD<MULTIPOINT_COUNT>(d->localPlayer, d->players, d->hitboxIDsSOA.size(), d->traceEndSOA.data(), d->entID, d->traceOutputsSOA.data());
 
+	int ret = -1;
+
 	for (size_t i = 0; i < d->hitboxIDsSOA.size(); i++) {
 		bool quit = false;
 
 		for (size_t o = 0; o < MULTIPOINT_COUNT; o++) {
-			if (true && CompareDataLegit(d, d->traceOutputsSOA[i * MULTIPOINT_COUNT + o], (vec3_t)d->traceEndSOA[i].acc[o], d->hitboxIDsSOA[i], d->fovListSOA[i]))
+			if (true && CompareDataLegit(d, d->traceOutputsSOA[i * MULTIPOINT_COUNT + o], (vec3_t)d->traceEndSOA[i].acc[o], d->hitboxIDsSOA[i], d->fovListSOA[i * MULTIPOINT_COUNT + o]))
 				quit = true;
-			if (false && CompareDataRage(d, d->traceOutputsSOA[i * MULTIPOINT_COUNT + o], (vec3_t)d->traceEndSOA[i].acc[o], d->hitboxIDsSOA[i], d->fovListSOA[i]))
+			if (false && CompareDataRage(d, d->traceOutputsSOA[i * MULTIPOINT_COUNT + o], (vec3_t)d->traceEndSOA[i].acc[o], d->hitboxIDsSOA[i], d->fovListSOA[i * MULTIPOINT_COUNT + o]))
 				quit = true;
 		}
 
+		//TODO: add an option to return early
 		if (quit)
-			return d->entID;
+			ret = d->entID; //return d->entID;
 	}
 
-	return -1;
+	return ret;
 }
 
 static int ProcessAimPoints(AimbotLoopData* d)
 {
 	Tracing::TracePointList(d->localPlayer, d->players, d->hitboxIDs.size(), d->traceEnd.data(), d->entID, d->traceOutputs.data());
 
+	int ret = -1;
+
 	for (size_t i = 0; i < d->hitboxIDs.size(); i++) {
 		if (true && CompareDataLegit(d, d->traceOutputs[i], d->traceEnd[i], d->hitboxIDs[i], d->fovList[i]))
-			return d->entID;
+			ret = d->entID;//return d->entID;
 		else if (true && CompareDataRage(d, d->traceOutputs[i], d->traceEnd[i], d->hitboxIDs[i], d->fovList[i]))
-			return d->entID;
+		    ret = d->entID;//return d->entID;
 	}
 
-	return -1;
+	return ret;
 }
 
 static int PrepareHitboxList(AimbotLoopData* d, size_t id)
@@ -152,12 +157,18 @@ static int PrepareHitboxList(AimbotLoopData* d, size_t id)
 			continue;
 
 		if (d->hitboxList[i] & HitboxScanMode_t::SCAN_MULTIPOINT) {
-			mvec3 mpVec = d->players->hitboxes[id].mpOffset[i] + d->players->hitboxes[id].mpDir[i] * d->players->hitboxes[id].radius[i] * pointScaleVal;
+			mvec3 mpVec = d->players->hitboxes[id].mpOffset[i] + d->players->hitboxes[id].mpDir[i] * d->players->hitboxes[id].radius[i] * pointScaleVal[i];
 			mpVec = d->players->hitboxes[id].wm[i].VecSoaTransform(mpVec);
 
 			d->traceEndSOA.push_back(mpVec);
 			d->hitboxIDsSOA.push_back(i);
-			d->fovListSOA.push_back(fov);
+			//TODO: Convert this to more vectorizable way
+			for (int o = 0; o < MULTIPOINT_COUNT; o++) {
+				vec3_t angle = ((vec3_t)mpVec.acc[o] - d->localPlayer->eyePos).GetAngles(true);
+				vec3_t angleDiff = (shootAngles - angle).NormalizeAngles<2>(-180.f, 180.f);
+				float fovSOA = angleDiff.Length<2>();
+				d->fovListSOA.push_back(fovSOA);
+			}
 			d->traceOutputsSOA.resize(d->traceOutputsSOA.size() + MULTIPOINT_COUNT);
 		} else {
 			d->traceEnd.push_back(average);
@@ -175,7 +186,9 @@ static int LoopPlayers(AimbotLoopData* d)
 	int ret = 0;
 
 	for (size_t i = 0; i < d->players->count; i++) {
-		if (~d->ignoreList[d->players->unsortIDs[i] / 64] & (1ull << (d->players->unsortIDs[i] % 64)) && d->players->flags[i] & Flags::HITBOXES_UPDATED && ~d->players->flags[i] & Flags::FRIENDLY && d->players->fov[i] - 4.f < d->target.fov) {
+		if (~d->ignoreList[d->players->unsortIDs[i] / 64] & (1ull << (d->players->unsortIDs[i] % 64)) && d->players->flags[i] & Flags::HITBOXES_UPDATED && ~d->players->flags[i] & Flags::FRIENDLY &&
+			//The following check is just a rough way to clear the unrelated players from view. A better check would be to intersect AABB with previous target to see if they overlap. If they do not, then simply quit the loop since the players should be sorted by FOV
+			d->players->fov[i] - 30.f < d->target.fov) {
 			PrepareHitboxList(d, i);
 
 			int ap = ProcessAimPoints(d);
@@ -322,10 +335,11 @@ static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_
 	}
 }
 
-AimbotTarget Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, unsigned char hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)])
+AimbotTarget Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, unsigned char hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)], float pointScale[MAX_HITBOXES])
 {
 	AimbotTarget target;
 	shootAngles = localPlayer->angles + localPlayer->aimOffset;
+	pointScaleVal = pointScale;
 
 	FindBestTarget(&target, track, futureTrack, localPlayer, hitboxList, ignoreList);
 
