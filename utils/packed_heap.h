@@ -23,6 +23,32 @@ class PackedHeapL;
 template<typename T>
 class PackedHeap;
 
+template<typename T, typename F>
+struct PackedPtr
+{
+	const F& buf;
+	idx_t idx;
+
+	constexpr PackedPtr(const F& b, idx_t i) : buf(b), idx(i)
+	{
+	}
+
+	constexpr T& operator*() const
+	{
+		return *(T*)&buf[idx];
+	}
+
+	inline T* operator->()
+	{
+		return (T*)&buf[idx];
+	}
+
+	constexpr PackedPtr operator+(int o) const
+	{
+		return PackedPtr(buf, idx + o);
+	}
+};
+
 struct MemRegion
 {
 	idx_t start, end;
@@ -121,21 +147,39 @@ class PackedHeapL
 			Free(idx);
 	}
 
-	inline T& operator[](idx_t idx)
+	constexpr void FreeAll()
+	{
+		freeRegions.clear();
+		buf.clear();
+	}
+
+	constexpr const T& operator[](idx_t idx) const
 	{
 		return buf[idx - 1];
 	}
 
-	inline T* operator+(idx_t idx)
+    constexpr const auto operator+(idx_t idx) const
 	{
-		return &buf[idx - 1];
+		return PackedPtr<T, decltype(*this)>(*this, idx);
+	}
+
+	constexpr T& operator[](idx_t idx)
+	{
+		return buf[idx - 1];
+	}
+
+    constexpr auto operator+(idx_t idx)
+	{
+		return PackedPtr<T, decltype(*this)>(*this, idx);
 	}
 };
 
 class PackedAllocator
 {
+
   protected:
 
+	static const int GROW_FACTOR = 2;
 	static const unsigned char USED_REGION = 0xaa;
 	static const unsigned char FREE_REGION = 0x88;
 	static const unsigned char HOLE_START = 0xba;
@@ -192,7 +236,7 @@ class PackedAllocator
 		return false;
 	}
 
-	idx_t _Alloc(idx_t sz);
+	idx_t _Alloc(idx_t sz, size_t alignment);
   public:
 
 	idx_t totalAllocations = 0;
@@ -208,8 +252,9 @@ class PackedAllocator
 	PackedAllocator& operator=(const PackedAllocator& o);
 	PackedAllocator& operator=(PackedAllocator&& o);
 
-	idx_t Alloc(idx_t sz = 1);
+	idx_t Alloc(idx_t sz = 1, size_t alignment = 4);
 	void Free(idx_t idx);
+	void FreeAll();
 
 	constexpr auto& operator[](idx_t idx) const
 	{
@@ -218,7 +263,7 @@ class PackedAllocator
 
 	constexpr auto operator+(idx_t idx) const
 	{
-		return &buf[idx];
+		return PackedPtr<char, char*>(buf, idx);
 	}
 };
 
@@ -227,8 +272,8 @@ class PackedHeap : PackedAllocator
 {
   private:
 
-	template<typename U, typename F>
-	void WalkBuffer(char* prevBuf, idx_t limit, U holeHandler, F chunkHandler)
+	template<auto& HoleHandler, auto& ChunkHandler>
+	void WalkBuffer(char* prevBuf, idx_t limit)
 	{
 		idx_t idx = 0;
 		while (idx < limit) {
@@ -238,15 +283,15 @@ class PackedHeap : PackedAllocator
 				idx_t holeStart = idx;
 				while ((unsigned char)prevBuf[idx++] != HOLE_END)
 					;
-				holeHandler(buf, prevBuf, holeStart, idx);
+				HoleHandler(buf, prevBuf, holeStart, idx);
 				continue;
 			} else if ((unsigned char)meta->used == HOLE_REGION) {
 				idx++;
-				holeHandler(buf, prevBuf, idx - 1, idx);
+				HoleHandler(buf, prevBuf, idx - 1, idx);
 				continue;
 			}
 
-			chunkHandler(buf, prevBuf, idx, meta);
+			ChunkHandler(buf, prevBuf, idx, meta);
 
 			idx += meta->size + sizeof(MetaData) * 2;
 		}
@@ -309,7 +354,7 @@ class PackedHeap : PackedAllocator
 			bufSize = o.bufSize;
 		} else {
 			if (buf) {
-				WalkBuffer(buf, bufSize, HoleNull, DestructChunk);
+				WalkBuffer<HoleNull, DestructChunk>(buf, bufSize);
 				free(buf);
 			}
 			bufSize = o.bufSize;
@@ -317,7 +362,7 @@ class PackedHeap : PackedAllocator
 			buf = (char*)malloc(bufCapacity);
 		}
 
-		WalkBuffer(o.buf, bufSize, HoleCopy, ConstructChunk);
+		WalkBuffer<HoleCopy, ConstructChunk>(o.buf, bufSize);
 		return *this;
 	}
 
@@ -331,7 +376,7 @@ class PackedHeap : PackedAllocator
 		freeRegionsTree = std::move(o.freeRegionsTree);
 
 		if (buf) {
-			WalkBuffer(buf, bufSize, HoleNull, DestructChunk);
+			WalkBuffer<HoleNull, DestructChunk>(buf, bufSize);
 			free(buf);
 		}
 
@@ -358,26 +403,7 @@ class PackedHeap : PackedAllocator
 
 	~PackedHeap()
 	{
-		if (buf) {
-			idx_t idx = 0;
-			while (idx < bufSize - sizeof(MetaData) && idx < bufSize) {
-				MetaData* meta = (MetaData*)&buf[idx];
-
-				if ((unsigned char)meta->used == HOLE_START) {
-					while ((unsigned char)buf[idx++] != HOLE_END)
-						;
-					continue;
-				} else if ((unsigned char)meta->used == HOLE_REGION) {
-					idx++;
-					continue;
-				}
-
-				if ((unsigned char)meta->used == USED_REGION)
-					Delete(idx + sizeof(MetaData));
-
-				idx += meta->size + sizeof(MetaData) * 2;
-			}
-		}
+		DeleteAll();
 	}
 
 	inline idx_t New(size_t sz = 1)
@@ -390,11 +416,11 @@ class PackedHeap : PackedAllocator
 
 		char* prevBuf = buf;
 
-		idx_t ret = _Alloc(sz * sizeof(T));
+		idx_t ret = _Alloc(sz * sizeof(T), std::alignment_of<T>::value);
 
 		//If the buffer was reallocated, we need to call the move constructors on all members and destruct the members of previous buffer
 		if (prevBuf != buf) {
-			WalkBuffer(prevBuf, std::min(ret, ret - (idx_t)sizeof(MetaData)), HoleCopy, MoveChunk);
+			WalkBuffer<HoleCopy, MoveChunk>(prevBuf, std::min(ret, ret - (idx_t)sizeof(MetaData)));
 			free(prevBuf);
 		}
 
@@ -414,6 +440,31 @@ class PackedHeap : PackedAllocator
 			((T*)&buf[idx + i * sizeof(T)])->~T();
 
 		Free(idx);
+	}
+
+	inline void DeleteAll()
+	{
+		if (buf) {
+			WalkBuffer<HoleNull, DestructChunk>(buf, bufSize > (idx_t)sizeof(MetaData) ? bufSize - (idx_t)sizeof(MetaData) : 0);
+			FreeAll();
+		}
+	}
+
+	//This is significantly faster if the data stored is simple and does not need constructors/destructors
+	inline void DeleteAllFreeOnly()
+	{
+		if (buf)
+			FreeAll();
+	}
+
+	constexpr auto& operator[](idx_t idx) const
+	{
+		return *(T*)&buf[idx];
+	}
+
+	constexpr auto operator+(idx_t idx) const
+	{
+		return PackedPtr<T, decltype(*this)>(*this, idx);
 	}
 };
 

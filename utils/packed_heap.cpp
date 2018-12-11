@@ -1,4 +1,5 @@
 #include "packed_heap.h"
+#include <memory>
 
 
 PackedAllocator::PackedAllocator(size_t sz)
@@ -70,20 +71,27 @@ PackedAllocator& PackedAllocator::operator=(PackedAllocator&& o)
 	return *this;
 }
 
-idx_t PackedAllocator::_Alloc(idx_t sz)
+idx_t PackedAllocator::_Alloc(idx_t sz, size_t alignment)
 {
-	sz = sz + (sz % 4 ? 4 - sz % 4 : 0);
+	alignment = std::max(size_t(4), alignment);
 
 	totalAllocations++;
 
 	size_t allocSize = sz + sizeof(MetaData) * 2;
 	if (!freeRegionsTree.empty()) {
-		auto reg = freeRegionsTree.lower_bound(sz);
+		auto reg = freeRegionsTree.lower_bound(sz + alignment - 4);
 		if (reg != freeRegionsTree.end()) {
 			idx_t address = *reg->second.rbegin();
 			idx_t ret = address + sizeof(MetaData);
+
+			//Align the allocated pointer
+			size_t delta = ((MetaData*)&buf[address])->size;
+			void* ptr = (void*)(size_t)ret;
+			idx_t origRet = ret;
+			idx_t ret2 = (idx_t)(size_t)std::align(alignment, sz, ptr, delta);
+			delta -= sz;
+			ret = ret2;
 			reg->second.erase(address);
-			idx_t delta = ((MetaData*)&buf[address])->size - sz;
 
 #ifdef PACKED_HEAP_DEBUG
 			if (reg->first != ((MetaData*)&buf[address])->size)
@@ -95,6 +103,17 @@ idx_t PackedAllocator::_Alloc(idx_t sz)
 
 			if (!reg->second.size())
 				freeRegionsTree.erase(reg);
+
+			idx_t lowerHoleStart = origRet;
+			idx_t lowerHoleDelta = ret2 - sizeof(MetaData) - lowerHoleStart;
+
+			//The lower holes are to be caused by alignments > 8
+			if (lowerHoleDelta && lowerHoleDelta < sz && !FillHole(lowerHoleStart, lowerHoleDelta)) {
+				idx_t holeSpotSize = lowerHoleDelta - sizeof(MetaData) * 2;
+				*(MetaData*)&buf[lowerHoleStart] = {FREE_REGION, holeSpotSize};
+				*(MetaData*)&buf[lowerHoleStart + holeSpotSize + sizeof(MetaData)] = {FREE_REGION, holeSpotSize};
+				freeRegionsTree[holeSpotSize].insert(lowerHoleStart);
+			}
 
 			idx_t holeStart = ret + allocSize - sizeof(MetaData);
 
@@ -112,17 +131,24 @@ idx_t PackedAllocator::_Alloc(idx_t sz)
 
 	totalResizes++;
 
-	idx_t holeStart = bufSize;
-	idx_t holeEnd = holeStart + (holeStart % 4 ? 4 - holeStart % 4 : 0);
+	idx_t baseIdx = bufSize + sizeof(MetaData);
+	size_t delta = sz + alignment;
+	void* ptr = (void*)(size_t)baseIdx;
+	baseIdx = (idx_t)(size_t)std::align(alignment, sz, ptr, delta);
 
-	if (holeEnd - holeStart)
-		FillHole(holeStart, holeEnd - holeStart);
+	idx_t lowerHoleStart = bufSize;
+	idx_t lowerHoleDelta = baseIdx - sizeof(MetaData) - lowerHoleStart;
 
-	idx_t baseIdx = holeEnd + sizeof(MetaData);
+	if (lowerHoleDelta && lowerHoleDelta < sz && !FillHole(lowerHoleStart, lowerHoleDelta)) {
+		idx_t holeSpotSize = lowerHoleDelta - sizeof(MetaData) * 2;
+		*(MetaData*)&buf[lowerHoleStart] = {FREE_REGION, holeSpotSize};
+		*(MetaData*)&buf[lowerHoleStart + holeSpotSize + sizeof(MetaData)] = {FREE_REGION, holeSpotSize};
+		freeRegionsTree[holeSpotSize].insert(lowerHoleStart);
+	}
 
 	if (bufCapacity < baseIdx + sizeof(MetaData) + sz) {
 		totalReallocations++;
-		bufCapacity *= 2;
+		bufCapacity = (baseIdx + sizeof(MetaData) + sz) * GROW_FACTOR;
 		buf = (char*)malloc(bufCapacity);
 	}
 
@@ -133,7 +159,7 @@ idx_t PackedAllocator::_Alloc(idx_t sz)
 	return baseIdx;
 }
 
-idx_t PackedAllocator::Alloc(idx_t sz)
+idx_t PackedAllocator::Alloc(idx_t sz, size_t alignment)
 {
 	if (!buf) {
 		bufCapacity = sz + 2 * sizeof(MetaData);
@@ -142,7 +168,7 @@ idx_t PackedAllocator::Alloc(idx_t sz)
 
 	char* prevBuf = buf;
 
-	idx_t ret = _Alloc(sz);
+	idx_t ret = _Alloc(sz, alignment);
 
 	if (buf != prevBuf) {
 		memcpy(buf, prevBuf, ret - sizeof(MetaData));
@@ -234,4 +260,10 @@ void PackedAllocator::Free(idx_t idx)
 	*upperMetaData = *metaData;
 
 	freeRegionsTree[metaData->size].insert((idx_t)((uintptr_t)metaData - (uintptr_t)&buf[0]));
+}
+
+void PackedAllocator::FreeAll()
+{
+	totalFrees += totalAllocations - totalFrees;
+	bufSize = 0;
 }

@@ -105,7 +105,7 @@ struct LList
 		}
 		if (lck)
 			lck->lock();
-		LEntry* entry = entries + front;
+		LEntry* entry = &entries[front];
 		front = entry->prev;
 		if (front)
 			entries[front].next = 0;

@@ -83,6 +83,7 @@ crc = executable('crc_test', files(['tests/crc.cpp', 'utils/crc32.cpp']), cpp_ar
 #code_crypt = executable('code_crypt_test', files(['tests/codecrypt.cpp', 'utils/codecrypt.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/shared_mutex.cpp', 'utils/semaphores.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 settings = executable('settings_test', files(['tests/settings.cpp', 'utils/crc32.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 allocator = executable('allocator_test', files(['tests/allocator.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0'], link_args : linker_args, dependencies : thread_dep)
+kd_tree = executable('kd_tree_test', files(['tests/kd_tree.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0'], link_args : linker_args, dependencies : thread_dep)
 
 
 test('shared mutex', smtx)
@@ -92,6 +93,7 @@ test('crc', crc)
 #test('code_crypt', code_crypt)
 test('settings', settings)
 test('allocator', allocator)
+  test('kd_tree', kd_tree)
 
 foreach p : ['no-sse2', 'sse2', 'sse4.2', 'avx', 'avx2', 'avx512f']
         vectors = executable('vector_test_'+p, files(['tests/vector.cpp']), cpp_args : compile_args + ['-m'+p], link_args : linker_args, dependencies : thread_dep)

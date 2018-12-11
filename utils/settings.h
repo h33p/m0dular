@@ -47,7 +47,7 @@ class SettingsGroupBase
 	{
 		std::vector<unsigned char> ret;
 		for (auto& i : map) {
-			idx_t sz = *(idx_t*)(alloc + i.second - sizeof(idx_t));
+			idx_t sz = *(idx_t*)(&alloc[i.second] - sizeof(idx_t));
 			crcs_t crc = i.first;
 
 			for (size_t o = 0; o < sizeof(sz); o++)
@@ -66,7 +66,7 @@ class SettingsGroupBase
 	inline idx_t RegisterOption(crcs_t crc, const T& val)
 	{
 		idx_t idx = ReserveOption<T>(crc, T());
-		*(T*)(alloc + idx) = val;
+		*(T*)(&alloc[idx]) = val;
 		return idx;
 	}
 
@@ -75,7 +75,7 @@ class SettingsGroupBase
 	{
 		if (map.find(crc) == map.end()) {
 			idx_t idx = alloc.Alloc(sizeof(T));
-			*(T*)(alloc + idx) = val;
+			*(T*)(&alloc[idx]) = val;
 			map[crc] = idx;
 		}
 		return map[crc];
@@ -91,7 +91,7 @@ class SettingsGroupBase
 	template<typename T>
 	constexpr T* RetreivePtrFast(idx_t idx)
 	{
-		return (T*)(alloc + idx);
+		return (T*)(&alloc[idx]);
 	}
 
 	template<crcs_t CRC, typename T>
