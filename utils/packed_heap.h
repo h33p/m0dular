@@ -244,7 +244,7 @@ class PackedAllocator
 	idx_t totalResizes = 0;
 	idx_t totalReallocations = 0;
 
-	PackedAllocator(size_t sz = 10);
+	PackedAllocator(size_t sz = 10, char* b = nullptr);
 	PackedAllocator(const PackedAllocator& o);
 	PackedAllocator(const PackedAllocator&& o);
 	~PackedAllocator();
@@ -268,7 +268,7 @@ class PackedAllocator
 };
 
 template<typename T>
-class PackedHeap : PackedAllocator
+class PackedHeap : protected PackedAllocator
 {
   private:
 
@@ -388,8 +388,8 @@ class PackedHeap : PackedAllocator
 		return *this;
 	}
 
-	PackedHeap(size_t sz = 10)
-		: PackedAllocator(sz * sizeof(T)) {}
+	PackedHeap(size_t sz = 10, char* b = nullptr)
+		: PackedAllocator(sz * sizeof(T), b) {}
 
 	constexpr PackedHeap(PackedHeap& o)
 	{
@@ -467,6 +467,5 @@ class PackedHeap : PackedAllocator
 		return PackedPtr<T, decltype(*this)>(*this, idx);
 	}
 };
-
 
 #endif

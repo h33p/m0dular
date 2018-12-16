@@ -1,14 +1,15 @@
 project('m0dular-framework', 'cpp', 'c', default_options : ['c_std=c11', 'cpp_std=c++17', 'b_ndebug=if-release'])
 
-compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces']
+#compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces']
+compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces', '-Wno-format', '-Wno-unused-command-line-argument']
 linker_args = compile_args
 
 if not get_option('buildtype').startswith('debug')
-	compile_args += ['-Ofast']
+	compile_args += ['-O2', '-g', '-fstack-protector-strong']
 	linker_args += ['-flto', '-O0']
 else
   compile_args += ['-g', '-O0']
-  linker_args += ['-lasan']
+#  linker_args += ['-lasan']
 endif
 
 includes = []
@@ -42,13 +43,13 @@ if meson.is_cross_build()
 		else
 			add_args = []
 			linker_args += '-Wl,-debug:full'
-			linker_args += '-Wl,-v'
 		endif
 		linker_args += '-Bdynamic'
 		linker_args += '-lkernel32'
 		linker_args += '-lmsvcrt'
 	elif host_machine.system() == 'linux'
 		linker_args += '-fuse-ld=lld'
+    linker_args += '-lrt'
 		add_args = ['-target', 'x86_64-linux', '-flto']
 	endif
 	foreach p :  add_args
@@ -58,7 +59,7 @@ if meson.is_cross_build()
 endif
 
 if host_machine.system() == 'linux'
-  linker_args += '-ldl'
+  linker_args += ['-ldl', '-lrt']
 endif
 
 foreach p : libraries
@@ -83,7 +84,8 @@ crc = executable('crc_test', files(['tests/crc.cpp', 'utils/crc32.cpp']), cpp_ar
 #code_crypt = executable('code_crypt_test', files(['tests/codecrypt.cpp', 'utils/codecrypt.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/shared_mutex.cpp', 'utils/semaphores.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 settings = executable('settings_test', files(['tests/settings.cpp', 'utils/crc32.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 allocator = executable('allocator_test', files(['tests/allocator.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0'], link_args : linker_args, dependencies : thread_dep)
-kd_tree = executable('kd_tree_test', files(['tests/kd_tree.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0'], link_args : linker_args, dependencies : thread_dep)
+shmem_allocator = executable('shmem_allocator_test', files(['tests/shmemalloc.cpp', 'utils/named_semaphores.cpp']), cpp_args : compile_args + ['-DOFFSET_POINTER_DEBUG'], link_args : linker_args, dependencies : thread_dep)
+kd_tree = executable('kd_tree_test', files(['tests/kd_tree.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0', '-DOFFSET_POINTER_DEBUG'], link_args : linker_args, dependencies : thread_dep)
 
 
 test('shared mutex', smtx)
@@ -93,7 +95,9 @@ test('crc', crc)
 #test('code_crypt', code_crypt)
 test('settings', settings)
 test('allocator', allocator)
-  test('kd_tree', kd_tree)
+test('kd_tree', kd_tree)
+#currently no automated test available
+#test('shmem_allocator', shmem_allocator)
 
 foreach p : ['no-sse2', 'sse2', 'sse4.2', 'avx', 'avx2', 'avx512f']
         vectors = executable('vector_test_'+p, files(['tests/vector.cpp']), cpp_args : compile_args + ['-m'+p], link_args : linker_args, dependencies : thread_dep)

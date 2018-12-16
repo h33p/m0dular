@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "../utils/settings.h"
 #include "../utils/shared_utils.h"
+#include "../utils/freelistallocator.h"
+#include "../utils/allocwraps.h"
 
 #include <atomic>
 #include <thread>
@@ -8,7 +10,9 @@
 
 typedef std::chrono::high_resolution_clock Clock;
 
-SettingsGroup globalSettings;
+//Pointer proxies prevent the option variables from storing and rechecking the address of the SettingsGroup layer every time it is accessed. Should improve performance
+SettingsGroup* globalSettingsPtr = new typename std::decay<decltype(*globalSettingsPtr)>::type();
+pointer_proxy<globalSettingsPtr> globalSettings;
 
 SettingsGroup groupASettings;
 SettingsGroup groupBSettings;

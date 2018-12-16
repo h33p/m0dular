@@ -33,7 +33,7 @@ int main()
 		auto t1 = Clock::now();
 		Threading::QueueJob(TJob, (threadjob){0 * 1 + rand() % 1});
 		auto t2 = Clock::now();
-		mtime = std::max(mtime, std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
+		mtime = std::max((long long)mtime, (long long)std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count());
 		global_return_status--;
 		if (!(i % 100000)) {
 			printf("%d... (%lu)\n", i, mtime);

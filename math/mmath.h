@@ -1,6 +1,7 @@
 #ifndef MMATH_H
 #define MMATH_H
 
+#include "../utils/shared_utils.h"
 #include "../wincludes.h"
 #include <stddef.h>
 #include <type_traits>
@@ -73,15 +74,6 @@ struct comp_if
 {
 	static const bool value = (A == B);
 };
-
-template<typename first, typename...more>
-struct AllArithmetic {
-	static const bool value = std::is_arithmetic<first>::value &&
-		AllArithmetic<more...>::value;
-};
-
-template<typename first>
-struct AllArithmetic<first> : std::is_arithmetic<first> {};
 
 template<size_t N>
 constexpr int NumOf(const int val)

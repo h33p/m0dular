@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <algorithm>
+#include <random>
 
 const int TEST_SIZE = 400000;
 const int RTABLE_SIZE = TEST_SIZE / 100;
@@ -65,10 +66,13 @@ int main()
 {
 	srand(time(nullptr));
 
+	std::random_device rd;
+	std::mt19937 rnd(rd());
+
 	for (int i = 0; i < HEAP_TRASH_SIZE; i++)
 		heapTrash[i] = malloc(1 + rand() % HEAP_TRASH_RAND_RANGE);
 
-	std::random_shuffle(heapTrash, heapTrash + HEAP_TRASH_SIZE);
+	std::shuffle(heapTrash, heapTrash + HEAP_TRASH_SIZE, rnd);
 
 	for (int i = 0; i < HEAP_TRASH_SIZE / 4 * 3; i++)
 		free(heapTrash[i]);
@@ -76,13 +80,13 @@ int main()
 	for (int i = 0; i < RTABLE_SIZE; i++)
 		randTable[i] = 1 + i % RAND_RANGE;
 
-	std::random_shuffle(randTable, randTable + RTABLE_SIZE);
+	std::shuffle(randTable, randTable + RTABLE_SIZE, rnd);
 
 	for (int i = 0; i < TEST_SIZE; i++)
 		freeOrder[i] = i;
 
 	for (int i = 0; i < 4; i++)
-		std::random_shuffle(freeOrder + i * (TEST_SIZE / 4), freeOrder + (i + 1) * (TEST_SIZE / 4));
+		std::shuffle(freeOrder + i * (TEST_SIZE / 4), freeOrder + (i + 1) * (TEST_SIZE / 4), rnd);
 
 	printf("Initialized!\n\nRunning randomized count allocations...\n");
 

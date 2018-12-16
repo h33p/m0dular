@@ -2,9 +2,13 @@
 #include <memory>
 
 
-PackedAllocator::PackedAllocator(size_t sz)
+PackedAllocator::PackedAllocator(size_t sz, char* b)
 {
-	buf = (char*)malloc(sz);
+	if (b)
+		buf = b;
+	else
+		buf = (char*)malloc(sz);
+
 	bufCapacity = sz;
 	bufSize = 0;
 }

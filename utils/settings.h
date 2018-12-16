@@ -2,26 +2,53 @@
 #define SETTINGS_H
 
 #include "crc32.h"
-#include "packed_heap.h"
 #include "shared_utils.h"
-#include <unordered_map>
 #include <vector>
+//For shared memory supporting hashmap
+#include <boost/unordered_map.hpp>
 
 #define OPTION(type, name, ...) Option<type, CCRC32(#name), __VA_ARGS__> name
 #define OPTIONDEF(name) decltype(name) name
 
-template<typename Alloc>
+template<typename Alloc = std::allocator<unsigned char>>
 class SettingsGroupBase
 {
   public:
 
-    SettingsGroupBase() {}
+	using pointer = typename Alloc::pointer;
+	template<typename T>
+	using pointer_t = typename std::pointer_traits<pointer>::template rebind<T>;
+
+	struct MapEntry
+	{
+		pointer ptr;
+		size_t size;
+
+		template<typename T>
+		constexpr MapEntry(T p, size_t sz)
+			: ptr((pointer)p), size(sz) {}
+
+		constexpr MapEntry()
+			: ptr(), size() {}
+	};
+
+	SettingsGroupBase()
+	{
+		reloadCount = 0;
+	}
 
 	SettingsGroupBase(const std::vector<unsigned char>& buf)
 	{
+		reloadCount = 0;
+		Initialize(buf);
+		reloadCount = 0;
+	}
+
+	inline void Initialize(const std::vector<unsigned char>& buf)
+	{
 		size_t i = 0;
 		while (i < buf.size()) {
-			idx_t sz = 0;
+			size_t sz = 0;
 			crcs_t crc = 0;
 
 			for (size_t o = 0; o < sizeof(sz); o++)
@@ -32,22 +59,22 @@ class SettingsGroupBase
 				((unsigned char*)&crc)[o] = buf[i + o];
 			i += sizeof(crc);
 
-			idx_t a = alloc.Alloc(sz);
+			pointer a = alloc.allocate(sz);
 
 			for (size_t o = 0; o < sz; o++)
-				alloc[a + o] = buf[i++];
+			    a[o] = buf[i++];
 
-			map[crc] = a;
+			map[crc] = MapEntry(a, sz);
 		}
 
-		map.rehash(0);
+		reloadCount++;
 	}
 
 	inline std::vector<unsigned char> Serialize()
 	{
 		std::vector<unsigned char> ret;
 		for (auto& i : map) {
-			idx_t sz = *(idx_t*)(&alloc[i.second] - sizeof(idx_t));
+			size_t sz = i.second.size;
 			crcs_t crc = i.first;
 
 			for (size_t o = 0; o < sizeof(sz); o++)
@@ -57,141 +84,176 @@ class SettingsGroupBase
 				ret.push_back(((unsigned char*)&crc)[o]);
 
 			for (size_t o = 0; o < sz; o++)
-				ret.push_back(alloc[i.second + o]);
+				ret.push_back(i.second.ptr[o]);
 		}
 		return ret;
 	}
 
-	template<typename T>
-	inline idx_t RegisterOption(crcs_t crc, const T& val)
+	inline size_t ReloadCount()
 	{
-		idx_t idx = ReserveOption<T>(crc, T());
-		*(T*)(&alloc[idx]) = val;
+		return reloadCount;
+	}
+
+	template<typename T>
+	inline pointer_t<T> RegisterOption(crcs_t crc, const T& val)
+	{
+		pointer_t<T> idx = ReserveOption<T>(crc, T());
+		*(T*)&*idx = val;
 		return idx;
 	}
 
 	template<typename T>
-	inline idx_t ReserveOption(crcs_t crc, const T& val)
+	inline pointer_t<T> ReserveOption(crcs_t crc, const T& val)
 	{
 		if (map.find(crc) == map.end()) {
-			idx_t idx = alloc.Alloc(sizeof(T));
-			*(T*)(&alloc[idx]) = val;
-			map[crc] = idx;
+			pointer_t<T> idx = (pointer_t<T>)alloc.allocate(sizeof(T));
+			*idx = val;
+			map[crc] = MapEntry(idx, sizeof(T));
 		}
-		return map[crc];
+		return (pointer_t<T>)map[crc].ptr;
 	}
 
-	inline idx_t TryGetAlloc(crcs_t crc)
+	inline pointer TryGetAlloc(crcs_t crc)
 	{
 		if (map.find(crc) == map.end())
 			return 0;
-		return map[crc];
-	}
-
-	template<typename T>
-	constexpr T* RetreivePtrFast(idx_t idx)
-	{
-		return (T*)(&alloc[idx]);
+		return map[crc].ptr;
 	}
 
 	template<crcs_t CRC, typename T>
 	inline auto& Set(const T& val)
 	{
-		idx_t idx = RegisterOption(CRC, val);
-		*RetreivePtrFast<T>(idx) = val;
+		pointer_t<T> idx = RegisterOption(CRC, val);
+		*idx = val;
+		return *this;
+	}
+
+	template<typename T>
+	inline auto& SetRuntime(const T& val, crcs_t CRC)
+	{
+		pointer_t<T> idx = RegisterOption(CRC, val);
+		*idx = val;
 		return *this;
 	}
 
 	template<typename T, crcs_t CRC>
 	inline T Get()
 	{
-		idx_t idx = ReserveOption(CRC, T());
-		return *RetreivePtrFast<T>(idx);
+		pointer_t<T> idx = ReserveOption(CRC, T());
+		return *idx;
+	}
+
+	template<typename T>
+	inline T GetRuntime(crcs_t CRC)
+	{
+		pointer_t<T> idx = ReserveOption(CRC, T());
+		return *idx;
+	}
+
+	constexpr auto operator->()
+	{
+		return this;
 	}
 
   protected:
-	std::unordered_map<crcs_t, idx_t> map;
+	using MapAlloc = typename Alloc::template rebind<std::pair<const crcs_t, MapEntry>>::other;
+	boost::unordered_map<crcs_t, MapEntry, boost::hash<crcs_t>, std::equal_to<crcs_t>, MapAlloc> map;
 	Alloc alloc;
+	size_t reloadCount;
 };
 
-using SettingsGroup = SettingsGroupBase<PackedAllocator>;
+using SettingsGroup = SettingsGroupBase<std::allocator<unsigned char>>;
 
 template<typename T, crcs_t CRC, auto& G>
 struct OptionDataRef
 {
-	int allocID;
-	T* val;
+
+	using parent_type_t = decltype(*(G.operator->()));
+	using parent_type = typename std::decay<parent_type_t>::type;
+	using pointer = typename parent_type::template pointer_t<T>;
+
+	pointer allocID;
+	size_t reloadCnt;
 
 	constexpr OptionDataRef(const T& v)
-		: allocID(G.RegisterOption(CRC, v)),
-		val(G.template RetreivePtrFast<T>(allocID)) {}
+		: allocID(G->RegisterOption(CRC, v)), reloadCnt(G->ReloadCount()) {}
 
 	constexpr OptionDataRef()
-		: allocID(0),
-		val(nullptr) {}
+		: allocID() {}
+
+	constexpr void CheckReloadCnt()
+	{
+		size_t gCnt = G->ReloadCount();
+		if (reloadCnt != gCnt)
+			allocID = (pointer)0;
+		reloadCnt = gCnt;
+	}
 
 	constexpr void Refresh()
 	{
+		CheckReloadCnt();
 		if (!allocID)
-			allocID = G.ReserveOption(CRC, T());
-
-		val = G.template RetreivePtrFast<T>(allocID);
+			allocID = G->ReserveOption(CRC, T());
 	}
 
 	constexpr bool TryRefresh()
 	{
-		if (allocID)
-			val = G.template RetreivePtrFast<T>(allocID);
-		else
-			val = nullptr;
-
-		return !!val;
+		CheckReloadCnt();
+		return allocID;
 	}
 };
 
 template<typename T, crcs_t CRC, auto& G>
 struct OptionDataPtr
 {
+
+	using parent_type = typename std::decay<decltype(*G)>::type;
+	using pointer = typename parent_type::template pointer_t<T>;
+
+
 	typename std::remove_reference<decltype(G)>::type g;
-	int allocID;
-	T* val;
+	pointer allocID;
+	size_t reloadCnt;
 
 	constexpr OptionDataPtr(const T& v)
 		: g(G),
-		allocID(G->RegisterOption(CRC, v)),
-		val(G->template RetreivePtrFast<T>(allocID)) {}
+		allocID(G->RegisterOption(CRC, v)), reloadCnt(0) {}
 
 	constexpr OptionDataPtr()
 		: g(G),
-		allocID(0),
-		val(nullptr) {}
+		allocID(), reloadCnt(0) {}
+
+	constexpr void CheckReloadCnt()
+	{
+		size_t gCnt = G->ReloadCount();
+		if (reloadCnt != gCnt)
+			allocID = (pointer)0;
+		reloadCnt = gCnt;
+	}
 
 	constexpr void Refresh()
 	{
 		if (g != G) {
 			g = G;
 			allocID = g->ReserveOption(CRC, T());
-		}
+			reloadCnt = G->ReloadCount();
+		} else
+			CheckReloadCnt();
 
 		if (!allocID)
 			allocID = g->ReserveOption(CRC, T());
-
-		val = g->template RetreivePtrFast<T>(allocID);
 	}
 
 	constexpr bool TryRefresh()
 	{
 		if (g != G) {
 			g = G;
-			allocID = g->TryGetAlloc(CRC);
-		}
+			allocID = (pointer)g->TryGetAlloc(CRC);
+			reloadCnt = G->ReloadCount();
+		} else
+			CheckReloadCnt();
 
-		if (allocID)
-			val = g->template RetreivePtrFast<T>(allocID);
-		else
-			val = nullptr;
-
-		return !!val;
+		return !!allocID;
 	}
 };
 
@@ -213,13 +275,13 @@ struct SettingsChain<T, CRC, G>
 	constexpr T Get()
 	{
 		BaseType::Refresh();
-		return *BaseType::val;
+		return *BaseType::allocID;
 	}
 
 	constexpr void Set(const T& val)
 	{
 		BaseType::Refresh();
-		*BaseType::val = val;
+		*BaseType::allocID = val;
 	}
 };
 
@@ -238,7 +300,7 @@ struct SettingsChain<T, CRC, G, Args...>
 	constexpr T Get()
 	{
 		if (BaseType::TryRefresh())
-			return *BaseType::val;
+			return *BaseType::allocID;
 		return next.Get();
 	}
 
@@ -246,12 +308,12 @@ struct SettingsChain<T, CRC, G, Args...>
 	{
 		BaseType::Refresh();
 
-		if (!BaseType::val) {
+		if (!BaseType::allocID) {
 			next.Set(val);
 			return;
 		}
 
-		*BaseType::val = val;
+		*BaseType::allocID = val;
 	}
 
   private:
@@ -272,6 +334,11 @@ struct Option : public SettingsChain<T, CRC, Chain...>
 	constexpr operator T()
 	{
 		return Container::Get();
+	}
+
+	static constexpr T Get(Option& in)
+	{
+		return in.operator T();
 	}
 
 	template<typename F>

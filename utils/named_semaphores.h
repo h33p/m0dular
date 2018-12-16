@@ -6,20 +6,18 @@
 #include <stddef.h>
 #endif
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
 #include <semaphore.h>
 #include <time.h>
-#elif defined(__APPLE__)
-#include <dispatch/dispatch.h>
 #else
 #include "windows.h"
 #endif
 
-class Semaphore
+class NamedSemaphore
 {
 	public:
-	Semaphore(bool shared = false);
-	~Semaphore();
+	NamedSemaphore(const char* name);
+	~NamedSemaphore();
 	void Wait();
 	int TimedWait(size_t milliseconds);
 	void Post();
@@ -27,9 +25,8 @@ class Semaphore
 	private:
 
 #if defined(__linux__)
-	sem_t sm;
-#elif defined(__APPLE__)
-	dispatch_semaphore_t sm;
+	sem_t* sm;
+	const char* _name;
 #else
 	HANDLE sm;
 #endif

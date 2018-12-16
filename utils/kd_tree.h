@@ -1,197 +1,169 @@
 #ifndef KD_TREE_H
 #define KD_TREE_H
 
-#include "packed_heap.h"
+#include <stdint.h>
+#include <memory>
 
-template<typename T, unsigned int K>
+template<typename T, typename Pointer2 = uintptr_t*>
+struct TreeNode_t
+{
+	using Pointer = typename std::pointer_traits<Pointer2>::template rebind<TreeNode_t>;
+	T value;
+	Pointer left = 0, right = 0;
+
+	constexpr const T& operator*() const
+	{
+		return value;
+	}
+};
+
+template<typename T, unsigned int K, typename Alloc2 = std::allocator<TreeNode_t<T>>>
 struct KDTree
 {
-	struct TreeNode
-	{
-		T value;
-		idx_t left, right;
-
-	    constexpr const T& operator*() const
-		{
-			return value;
-		}
-	};
-
-	struct TreeNodeRef
-	{
-		const KDTree& ref;
-		idx_t allocID;
-
-		constexpr TreeNodeRef(const KDTree& tree, idx_t idx) : ref(tree), allocID(idx)
-		{
-
-		}
-
-		constexpr const TreeNode& operator*() const
-		{
-			return ref[allocID];
-		}
-
-		constexpr const TreeNode* operator->() const
-		{
-			return &ref[allocID];
-		}
-
-	};
-
   private:
+	//heck
+	using pointer3 = typename std::allocator_traits<Alloc2>::pointer;
+	using TreeNode2 = TreeNode_t<T, pointer3>;
+	using pointer2 = typename std::remove_const<typename TreeNode2::Pointer>::type;
+	using TreeNode = TreeNode_t<T, pointer2>;
+	using Alloc = typename Alloc2::template rebind<TreeNode>::other;
+	using pointer = typename std::remove_const<typename TreeNode::Pointer>::type;
 
-	PackedHeapL<TreeNode> alloc;
-	idx_t rootNode;
-	idx_t treeSize;
+	Alloc alloc;
+	pointer rootNode;
+	size_t treeSize;
 
   public:
 
-	constexpr idx_t size()
+	constexpr size_t size()
 	{
 		return treeSize;
 	}
 
-    constexpr TreeNode& operator[](idx_t idx)
+	constexpr pointer Insert(const T& entry)
 	{
-		return alloc[idx];
-	}
-
-    constexpr const TreeNode& operator[](idx_t idx) const
-	{
-		return alloc[idx];
-	}
-
-	constexpr TreeNodeRef Insert(const T& entry)
-	{
-		idx_t idx = 0;
+		pointer idx = 0;
 
 		Insert(rootNode, entry, 0, &idx);
 
 		if (!rootNode)
 			rootNode = idx;
 
-		return TreeNodeRef(*this, idx);
+		return idx;
 	}
 
-	constexpr TreeNodeRef Find(const T& entry)
+	constexpr pointer Find(const T& entry)
 	{
-		idx_t idx = Find(rootNode, entry, 0);
-		return TreeNodeRef(*this, idx);
+	    return Find(rootNode, entry, 0);
 	}
 
-	constexpr void DeleteNode(const TreeNodeRef& ref)
+	constexpr void DeleteNode(const pointer& ref)
 	{
 		DeleteNode(rootNode, ref->value, 0);
 	}
 
 	void Clear()
 	{
+		//TODO: walk deallocate
+		//alloc.FreeAll();
 		rootNode = 0;
 		treeSize = 0;
-		alloc.FreeAll();
 	}
 
   private:
 
-	idx_t Insert(idx_t root, const T& entry, unsigned int depth, idx_t* out)
+	pointer Insert(pointer root, const T& entry, unsigned int depth, pointer* out)
 	{
 		if (!root) {
-			root = alloc.Alloc();
+			root = alloc.allocate(1);
+			*root = TreeNode();
 		    treeSize++;
-			alloc[root].value = entry;
+		    root->value = entry;
 			if (out)
 				*out = root;
 			return root;
 		}
 
 		unsigned int d = depth % K;
-		auto rootNode = alloc + root;
 
-		if (entry[d] < rootNode->value[d])
-			rootNode->left = Insert(rootNode->left, entry, depth + 1, out);
+		if (entry[d] < root->value[d])
+			root->left = Insert((pointer)root->left, entry, depth + 1, out);
 		else
-			rootNode->right = Insert(rootNode->right, entry, depth + 1, out);
+			root->right = Insert((pointer)root->right, entry, depth + 1, out);
 
 		return root;
 	}
 
-    idx_t Find(idx_t root, const T& entry, unsigned int depth)
+	pointer Find(pointer root, const T& entry, unsigned int depth)
 	{
 		if (!root)
 			return 0;
 
-		TreeNode& rootNode = alloc[root];
-
-		if (entry == rootNode.value)
+		if (entry == root->value)
 			return root;
 
 		unsigned int d = depth % K;
 
-		if (entry[d] < rootNode.value[d])
-			return Find(rootNode.left, entry, depth + 1);
+		if (entry[d] < root->value[d])
+			return Find((pointer)root->left, entry, depth + 1);
 
-		return Find(rootNode.right, entry, depth + 1);
+		return Find((pointer)root->right, entry, depth + 1);
 	}
 
-	idx_t MinNode(idx_t x, idx_t y, idx_t z, unsigned int d)
+	pointer MinNode(pointer x, pointer y, pointer z, unsigned int d)
 	{
-		idx_t res = x;
-		if (y && alloc[y].value[d] < alloc[res].value[d])
+		pointer res = x;
+		if (y && z->value[d] < res->value[d])
 			res = y;
-		if (z && alloc[z].value[d] < alloc[res].value[d])
+		if (z && z->value[d] < res->value[d])
 			res = z;
 		return res;
 	}
 
-	idx_t FindMin(idx_t root, int dim, unsigned int depth)
+	pointer FindMin(pointer root, int dim, unsigned int depth)
 	{
 		if (!root)
 			return 0;
 
 		unsigned int d = depth % K;
-
-		TreeNode& rootNode = alloc[root];
 
 		if (d == dim) {
-			if (!rootNode.left)
+			if (!root->left)
 				return root;
-			return FindMin(rootNode.left, dim, depth + 1);
+			return FindMin(root->left, dim, depth + 1);
 		}
 
-		return MinNode(root, FindMin(rootNode.left, dim, depth + 1), FindMin(rootNode.right, dim, depth + 1));
+		return MinNode(root, FindMin(root->left, dim, depth + 1), FindMin(root->right, dim, depth + 1));
 	}
 
-	idx_t DeleteNode(idx_t root, const T& entry, unsigned int depth)
+	pointer DeleteNode(pointer root, const T& entry, unsigned int depth)
 	{
 		if (!root)
 			return 0;
 
 		unsigned int d = depth % K;
 
-		TreeNode& rootNode = alloc[root];
-
-		if (entry == rootNode.value) {
-			if (rootNode.right) {
-				idx_t min = FindMin(rootNode.right, d, 0);
-				rootNode.value = alloc[rootNode.right].value;
-				rootNode.right = DeleteNode(rootNode.right, alloc[min].value, depth + 1);
+		if (entry == root->value) {
+			if (root->right) {
+				pointer min = FindMin((pointer)root->right, d, 0);
+				root->value = ((pointer)root->right)->value;
+				root->right = DeleteNode((pointer)root->right, min->value, depth + 1);
 			} else if (rootNode.left) {
-				idx_t min = FindMin(rootNode.left, d, 0);
-				rootNode.value = alloc[rootNode.left].value;
-				rootNode.left = DeleteNode(rootNode.left, alloc[min].value, depth + 1);
+				pointer min = FindMin((pointer)root->left, d, 0);
+				root->value = ((pointer)root->left)->value;
+				root->left = DeleteNode((pointer)root->left, min->value, depth + 1);
 			} else {
-				alloc.Free(root);
+				alloc.deallocate(root, 1);
 				treeSize--;
 				return 0;
 			}
 			return root;
 		}
 
-		if (entry[d] < rootNode.value[d])
-			rootNode.left = DeleteNode(rootNode.left, entry, depth + 1);
+		if (entry[d] < root->value[d])
+		    root->left = DeleteNode((pointer)root->left, entry, depth + 1);
 		else
-			rootNode.right = DeleteNode(rootNode.right, entry, depth + 1);
+		    root->right = DeleteNode((pointer)root->right, entry, depth + 1);
 
 		return root;
 	}

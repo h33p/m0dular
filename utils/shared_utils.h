@@ -1,6 +1,8 @@
 #ifndef SHARED_UTILS_H
 #define SHARED_UTILS_H
 
+#include <type_traits>
+
 //We can force a constexpr to really be a compile-time expression
 template <typename T, T K>
 struct calc_constexpr
@@ -32,5 +34,35 @@ constexpr bool IsPointer(T& arg)
 {
 	return is_pointer<T>::value;
 }
+
+template<auto& G>
+class pointer_proxy
+{
+  public:
+	constexpr auto& operator->()
+	{
+		if constexpr(IsPointer(G))
+			return G;
+		else
+			return &G;
+	}
+
+	constexpr auto& operator*()
+	{
+		if constexpr(IsPointer(G))
+			return *G;
+		else
+			return G;
+	}
+};
+
+template<typename first, typename...more>
+	struct AllArithmetic {
+		static const bool value = std::is_arithmetic<first>::value &&
+			AllArithmetic<more...>::value;
+	};
+
+template<typename first>
+struct AllArithmetic<first> : std::is_arithmetic<first> {};
 
 #endif

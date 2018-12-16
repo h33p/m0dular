@@ -4,9 +4,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include "../utils/kd_tree.h"
+#include "../utils/freelistallocator.h"
+#include "../utils/allocwraps.h"
+#include <algorithm>
 
 constexpr int DIMS = 1500;
-constexpr int ALLOC_COUNT = 27000;
+constexpr int ALLOC_COUNT = 7000;
 
 template<typename T>
 struct KDPoint
@@ -45,7 +48,9 @@ struct KDPoint
 	}
 };
 
-KDTree<KDPoint<int>, 2> tree;
+uintptr_t allocBase = 0;
+generic_free_list_allocator<allocBase, true> alloc(3200, PlacementPolicy::FIND_FIRST);
+KDTree<KDPoint<int>, 2, stateful_allocator<TreeNode_t<KDPoint<int>>, alloc>> tree;
 std::vector<KDPoint<int>> testData;
 
 int main()
@@ -64,10 +69,10 @@ int main()
 			KDPoint<int> pt(i, o);
 			auto ref = tree.Find(pt);
 
-			if (ref.allocID) {
+			if (ref) {
 				auto iter = std::find(testData.begin(), testData.end(), pt);
 				if (iter != testData.end())
-					putchar('#');
+					;//putchar('#');
 				else {
 					putchar('X');
 				    status++;
@@ -75,7 +80,7 @@ int main()
 			} else {
 				auto iter = std::find(testData.begin(), testData.end(), pt);
 				if (iter == testData.end())
-					putchar('.');
+					;//putchar('.');
 				else {
 					putchar('x');
 				    status++;
