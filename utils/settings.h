@@ -18,14 +18,18 @@ class SettingsGroupBase
 	using pointer = typename Alloc::pointer;
 	template<typename T>
 	using pointer_t = typename std::pointer_traits<pointer>::template rebind<T>;
+	using size_type = unsigned int;
+
+	//Very basic check used to verify the type of config
+	static constexpr unsigned char HEADER_MAGIC = 0xde;
 
 	struct MapEntry
 	{
 		pointer ptr;
-		size_t size;
+		size_type size;
 
 		template<typename T>
-		constexpr MapEntry(T p, size_t sz)
+		constexpr MapEntry(T p, size_type sz)
 			: ptr((pointer)p), size(sz) {}
 
 		constexpr MapEntry()
@@ -37,18 +41,21 @@ class SettingsGroupBase
 		reloadCount = 0;
 	}
 
-	SettingsGroupBase(const std::vector<unsigned char>& buf)
+	SettingsGroupBase(const std::vector<unsigned char>& buf, size_t i = 0)
 	{
 		reloadCount = 0;
-		Initialize(buf);
+		Initialize(buf, i);
 		reloadCount = 0;
 	}
 
-	inline void Initialize(const std::vector<unsigned char>& buf)
+	inline size_t Initialize(const std::vector<unsigned char>& buf, size_t i = 0)
 	{
-		size_t i = 0;
+		//Possibly throw an exception
+		if (!i && buf[0] != HEADER_MAGIC)
+		    return ~0;
+
 		while (i < buf.size()) {
-			size_t sz = 0;
+			size_type sz = 0;
 			crcs_t crc = 0;
 
 			for (size_t o = 0; o < sizeof(sz); o++)
@@ -68,13 +75,17 @@ class SettingsGroupBase
 		}
 
 		reloadCount++;
+		return i;
 	}
 
-	inline std::vector<unsigned char> Serialize()
+	inline std::vector<unsigned char> Serialize(unsigned char pushHeader = HEADER_MAGIC)
 	{
 		std::vector<unsigned char> ret;
+
+		ret.push_back(pushHeader);
+
 		for (auto& i : map) {
-			size_t sz = i.second.size;
+			size_type sz = i.second.size;
 			crcs_t crc = i.first;
 
 			for (size_t o = 0; o < sizeof(sz); o++)
@@ -118,6 +129,13 @@ class SettingsGroupBase
 		if (map.find(crc) == map.end())
 			return 0;
 		return map[crc].ptr;
+	}
+
+	//IsBlocked can be overloaded to add in custom settings chain functionality
+	template<typename T>
+	inline bool IsBlocked(T ptr)
+	{
+		return false;
 	}
 
 	template<crcs_t CRC, typename T>
@@ -176,7 +194,7 @@ struct OptionDataRef
 	size_t reloadCnt;
 
 	constexpr OptionDataRef(const T& v)
-		: allocID(G->RegisterOption(CRC, v)), reloadCnt(G->ReloadCount()) {}
+		: allocID(G->ReserveOption(CRC, v)), reloadCnt(G->ReloadCount()) {}
 
 	constexpr OptionDataRef()
 		: allocID() {}
@@ -199,7 +217,7 @@ struct OptionDataRef
 	constexpr bool TryRefresh()
 	{
 		CheckReloadCnt();
-		return allocID;
+		return allocID && !G->template IsBlocked(allocID);
 	}
 };
 
@@ -217,7 +235,7 @@ struct OptionDataPtr
 
 	constexpr OptionDataPtr(const T& v)
 		: g(G),
-		allocID(G->RegisterOption(CRC, v)), reloadCnt(0) {}
+		allocID(G->ReserveOption(CRC, v)), reloadCnt(0) {}
 
 	constexpr OptionDataPtr()
 		: g(G),
@@ -253,7 +271,7 @@ struct OptionDataPtr
 		} else
 			CheckReloadCnt();
 
-		return !!allocID;
+		return allocID && !G->template IsBlocked(allocID);
 	}
 };
 
