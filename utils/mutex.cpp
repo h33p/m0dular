@@ -5,9 +5,11 @@
 
 Mutex::Mutex() {
 	int ret = pthread_mutex_init(&lck, nullptr);
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
 	if (ret) {
 		throw;
 	}
+#endif
 }
 
 Mutex::~Mutex() {

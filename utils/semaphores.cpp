@@ -5,7 +5,11 @@
 
 Semaphore::Semaphore(bool shared) {
 	if (sem_init(&sm, (int)shared, 0) == -1)
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
 		throw;
+#else
+	;
+#endif
 }
 
 Semaphore::~Semaphore() {
@@ -68,7 +72,11 @@ unsigned long Semaphore::Count()
 Semaphore::Semaphore(bool shared) {
 	//Unnamed shared semaphores do not work on windows
 	if (shared)
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
 		throw;
+#else
+	return;
+#endif
 	sm = CreateSemaphoreA(nullptr, 0, 0xffff, nullptr);
 }
 

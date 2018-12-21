@@ -164,7 +164,11 @@ class FreeListAllocator : public Allocator {
 			}
 
 		if (!affectedNode)
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
 			throw;
+#else
+		return nullptr;
+#endif
 
 		size_t alignmentPadding = padding - allocationHeaderSize;
 		size_t requiredSize = size + padding;
@@ -322,7 +326,11 @@ class FreeListAllocator : public Allocator {
 	void Reallocate(size_t neededSize)
 	{
 		if constexpr (!REALLOCATABLE)
+#if defined(__cpp_exceptions) || defined(_CPPUNWIND)
 			throw;
+#else
+		return;
+#endif
 		else {
 			size_t newSize = (totalSize + neededSize) * 2;
 			size_t oldSize = totalSize;
