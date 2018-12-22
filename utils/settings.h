@@ -48,41 +48,48 @@ class SettingsGroupBase
 		reloadCount = 0;
 	}
 
-	inline size_t Initialize(const std::vector<unsigned char>& buf, size_t i = 0)
+	inline size_t Initialize(const std::vector<unsigned char>& buf, size_t idx = 0)
 	{
 		//Possibly throw an exception
-		if (!i && buf[0] != HEADER_MAGIC)
+		if (buf[idx++] != HEADER_MAGIC)
 		    return ~0;
 
-		while (i < buf.size()) {
+		size_type sz = buf.size();
+
+		for (int i = 0; i < sizeof(size_type); i++)
+		    ((unsigned char*)&sz)[i] = buf[idx++];
+
+		while (idx < sz) {
 			size_type sz = 0;
 			crcs_t crc = 0;
 
 			for (size_t o = 0; o < sizeof(sz); o++)
-				((unsigned char*)&sz)[o] = buf[i + o];
-			i += sizeof(sz);
+				((unsigned char*)&sz)[o] = buf[idx + o];
+			idx += sizeof(sz);
 
 			for (size_t o = 0; o < sizeof(crc); o++)
-				((unsigned char*)&crc)[o] = buf[i + o];
-			i += sizeof(crc);
+				((unsigned char*)&crc)[o] = buf[idx + o];
+			idx += sizeof(crc);
 
 			pointer a = alloc.allocate(sz);
 
 			for (size_t o = 0; o < sz; o++)
-			    a[o] = buf[i++];
+			    a[o] = buf[idx++];
 
 			map[crc] = MapEntry(a, sz);
 		}
 
 		reloadCount++;
-		return i;
+		return idx;
 	}
 
-	inline std::vector<unsigned char> Serialize(unsigned char pushHeader = HEADER_MAGIC)
+	inline std::vector<unsigned char> Serialize(std::vector<unsigned char>& ret, unsigned char pushHeader = HEADER_MAGIC)
 	{
-		std::vector<unsigned char> ret;
-
 		ret.push_back(pushHeader);
+
+		size_type endSize = ret.size();
+
+		ret.resize(ret.size() + sizeof(size_type));
 
 		for (auto& i : map) {
 			size_type sz = i.second.size;
@@ -97,6 +104,12 @@ class SettingsGroupBase
 			for (size_t o = 0; o < sz; o++)
 				ret.push_back(i.second.ptr[o]);
 		}
+
+		size_type sz = ret.size();
+
+		for (int i = 0; i < sizeof(size_type); i++)
+			ret[endSize + i] = ((unsigned char*)&sz)[i];
+
 		return ret;
 	}
 
