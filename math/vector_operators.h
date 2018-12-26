@@ -1,7 +1,8 @@
 #ifndef VECTOR_OPERATORS_H
 
 #define VEC_OP(type, OP)									\
-	friend constexpr auto operator OP(type v, const type& ov)	\
+	template<template <typename F, size_t N2> class otherType>	\
+	friend constexpr auto operator OP(type v, const otherType<T, N>& ov) \
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v.v[o] = v.v[o] OP ov.v[o];						\
@@ -22,7 +23,8 @@
 		return v;											\
 	}														\
 															\
-    constexpr auto& operator OP##=(const type& ov)			\
+	template<template <typename F, size_t N2> class otherType>	\
+	constexpr auto& operator OP##=(const otherType<T, N>& ov)	\
 	{														\
 		for (size_t o = 0; o < N; o++)						\
 			v[o] OP##= ov.v[o];								\
@@ -222,7 +224,17 @@
 			for (size_t o = 0; o < Y; o++)		\
 				v[i][o] = ov[o];				\
 		return *this;							\
-	}
+	}											\
+															\
+	template<template <typename F, size_t Y2> class type>	\
+	constexpr auto& operator =(const volatile type<T, Y>& ov)	\
+	{														\
+		for (size_t i = 0; i < X; i++)						\
+			for (size_t o = 0; o < Y; o++)					\
+				v[i][o] = ov[o];							\
+		return *this;										\
+	}														\
+
 
 
 #define DEFINE_VEC_OPS(type)					\

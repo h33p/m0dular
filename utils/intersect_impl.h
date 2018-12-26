@@ -8,85 +8,41 @@
 
 #include "intersect.h"
 
-template<size_t Y>
-static vec3soa<float, Y> DirBetweenLines(vec3soa<float, Y>& __restrict va, vec3soa<float, Y>& __restrict vb, vec3soa<float, Y>& __restrict vc, vec3soa<float, Y>& __restrict vd)
+static inline float clampf(float a, float min, float max)
 {
-    auto u = vb - va;
-	auto v = vd - vc;
-    auto w = va - vc;
-	float a[Y], b[Y], c[Y], d[Y], e[Y], sN[Y], sD[Y], tN[Y], tD[Y], sc[Y], tc[Y];
+	return fminf(max, fmaxf(min, a));
+}
 
-	u.LengthSqr(a);
-	u.Dot(v, b);
-	v.LengthSqr(c);
-	u.Dot(w, d);
-	v.Dot(w, e);
+template<size_t Y>
+static vec3soa<float, Y> DirBetweenLines(const vec3soa<float, Y>& a, const vec3soa<float, Y>& b, const vec3soa<float, Y>& c, const vec3soa<float, Y>& d)
+{
+	auto d1 = (b - a);
+	auto d2 = (d - c);
 
-	float D[Y];
+	auto cross = d1.Cross(d2);
 
-	for (size_t i = 0; i < Y; i++)
-		D[i] = a[i] * c[i] - b[i] * b[i];
+	auto cross1 = d1.Cross(cross);
+	auto cross2 = d2.Cross(cross);
 
-	for (size_t i = 0; i < Y; i++)
-		sD[i] = D[i];
+	float dirDotC2[Y], d1DotC2[Y], dirDotC1[Y], d2DotC1[Y];
+	(c - a).Dot(cross2, dirDotC2);
+	d1.Dot(cross2, d1DotC2);
+	(a - c).Dot(cross1, dirDotC1);
+	d2.Dot(cross1, d2DotC1);
 
-	for (size_t i = 0; i < Y; i++)
-		tD[i] = D[i];
-
-	for (size_t i = 0; i < Y; i++) {
-		if (D[i] == 0.f) {
-			sN[i] = 0.0;
-			sD[i] = 1.0;
-			tN[i] = e[i];
-			tD[i] = c[i];
-		} else {
-			sN[i] = (b[i] * e[i] - c[i] * d[i]);
-			tN[i] = (a[i] * e[i] - b[i] * d[i]);
-			if (sN[i] < 0.0) {
-				sN[i] = 0.0;
-				tN[i] = e[i];
-				tD[i] = c[i];
-			} else if (sN[i] > sD[i]) {
-				sN[i] = sD[i];
-				tN[i] = e[i] + b[i];
-				tD[i] = c[i];
-			}
-		}
-	}
+	float c2Div[Y], c1Div[Y];
 
 	for (size_t i = 0; i < Y; i++) {
-		if (tN[i] < 0.0) {
-			tN[i] = 0.0;
-
-			if (-d[i] < 0.0)
-				sN[i] = 0.0;
-			else if (-d[i] > a[i])
-				sN[i] = sD[i];
-			else {
-				sN[i] = -d[i];
-				sD[i] = a[i];
-			}
-		} else if (tN[i] > tD[i]) {
-			tN[i] = tD[i];
-
-			if ((-d[i] + b[i]) < 0.0)
-				sN[i] = 0;
-			else if ((-d[i] + b[i]) > a[i])
-				sN[i] = sD[i];
-			else {
-				sN[i] = (-d[i] + b[i]);
-				sD[i] = a[i];
-			}
-		}
+		c2Div[i] = clampf(dirDotC2[i] / d1DotC2[i], 0, 1);
+		c1Div[i] = clampf(dirDotC1[i] / d2DotC1[i], 0, 1);
 	}
 
-	for (size_t i = 0; i < Y; i++)
-		sc[i] = (sN[i] == 0.f ? 0.f : sN[i] / sD[i]);
+	auto sp = c + d2 * c1Div;
+	auto ep = a + d1 * c2Div;
 
-	for (size_t i = 0; i < Y; i++)
-		tc[i] = (tN[i] == 0.f ? 0.f : tN[i] / tD[i]);
+	auto diff = ep - sp;
 
-    return w + (u * sc) - (v * tc);
+	return diff;
 }
 
 template<size_t Y>
@@ -112,6 +68,7 @@ unsigned int CapsuleCollider::IntersectSOA(vec3soa<float, Y>& __restrict a, vec3
 
 	return flags;
 }
+
 
 template unsigned int CapsuleCollider::IntersectSOA(nvec3& __restrict a, nvec3& __restrict b, nvec3* __restrict out);
 

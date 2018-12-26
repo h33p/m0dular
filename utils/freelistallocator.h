@@ -153,7 +153,7 @@ class FreeListAllocator : public Allocator {
 		alignment = std::max(alignment, size_t(8));
 
 		// Search through the free list for a free block that has enough space to allocate our data
-		size_t padding;
+		size_t padding = 0;
 		NodePtr affectedNode, previousNode;
 		this->Find(size, alignment, padding, previousNode, affectedNode);
 

@@ -10,6 +10,8 @@
 #include <cmath>
 #include <algorithm>
 
+#include "mm_funcs.h"
+
 #ifndef _MSC_VER
 #include <nmmintrin.h>
 #endif
@@ -38,14 +40,20 @@ const int SIMD_COUNT = OVERRIDE;
 #define PSIMD 16
 const int SIMD_COUNT = 16;
 typedef short simdFlags;
+DEFINE_MM(128);
+DEFINE_MM(256);
+DEFINE_MM(512);
 #elif defined(__AVX__) || defined(__AVX2__)
 #define PSIMD 8
 const int SIMD_COUNT = 8;
 typedef char simdFlags;
+DEFINE_MM(128);
+DEFINE_MM(256);
 #elif defined(__SSE__) || defined(__SSE2__) || defined(__SSE2_MATH__) || defined(_M_IX86_FP) || (defined(_M_AMD64) || defined(_M_X64))
 #define PSIMD 4
 const int SIMD_COUNT = 4;
 typedef char simdFlags;
+DEFINE_MM(128);
 #else
 const int SIMD_COUNT = 1;
 typedef char simdFlags;
@@ -67,6 +75,30 @@ template<typename W, size_t Q>
 struct max_avx512
 {
 	static const bool value = (Q * sizeof(W) == 64 && SIMD_COUNT >= 16);
+};
+
+template<typename W, size_t Q>
+struct do_avx512
+{
+	static const bool value = SIMD_COUNT >= 16 && !((Q * 8 * sizeof(W)) % (8 * 4 * 16));
+};
+
+template<typename W, size_t Q>
+struct do_avx
+{
+	static const bool value = !do_avx512<W, Q>::value && SIMD_COUNT >= 8 && !((Q * 8 * sizeof(W)) % (8 * 4 * 8));
+};
+
+template<typename W, size_t Q>
+struct do_sse
+{
+	static const bool value = !do_avx<W, Q>::value && !do_avx512<W, Q>::value && SIMD_COUNT >= 4 && !((Q * 8 * sizeof(W)) % (8 * 4 * 4));
+};
+
+template<typename W, size_t Q>
+struct do_simd
+{
+	static const bool value = do_sse<W, Q>::value || do_avx<W, Q>::value || do_avx512<W, Q>::value;
 };
 
 template<size_t A, size_t B>

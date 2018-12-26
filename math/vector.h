@@ -111,7 +111,7 @@ struct vecb
 	}
 
 	template<size_t B>
-	constexpr operator vecp<T, B>()
+	constexpr operator vecp<T, B>() const
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
 		vecp<T, B> vec = {};
@@ -121,7 +121,7 @@ struct vecb
 	}
 
 	template<size_t B>
-	constexpr operator vec3soa<T, B>()
+	constexpr operator vec3soa<T, B>() const
 	{
 		vec3soa<T, B> ret = {};
 		for (size_t i = 0; i < 3; i++)
@@ -172,7 +172,7 @@ struct vecp
 	}
 
 	template<size_t B>
-	constexpr auto& operator=(vecb<float, B>& vec)
+	constexpr auto& operator=(const vecb<float, B>& vec)
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
 		for (size_t i = 0; i < mv; i++)
@@ -181,7 +181,7 @@ struct vecp
 	}
 
 	template<size_t B>
-	constexpr operator vecb<T, B>()
+	constexpr operator vecb<T, B>() const
 	{
 		constexpr size_t mv = B < 4 ? B : 4;
 		vecb<T, B> vec = {};
@@ -191,7 +191,7 @@ struct vecp
 	}
 
 	template<size_t B>
-	constexpr operator vec3soa<T, B>()
+	constexpr operator vec3soa<T, B>() const
 	{
 		vec3soa<T, B> ret = {};
 		for (size_t i = 0; i < 3; i++)

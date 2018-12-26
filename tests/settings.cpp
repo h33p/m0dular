@@ -73,7 +73,8 @@ int main()
 
 	int optB = option_B;
 
-	auto buf = groupSettings->Serialize();
+	std::vector<unsigned char> buf;
+	groupSettings->Serialize(buf);
 
 	if (SettingsGroup(buf).SettingsGroup::Get<int, "option_B"_crc32>() != optB)
 		return EXIT(9);

@@ -56,7 +56,7 @@ class SettingsGroupBase
 
 		size_type sz = buf.size();
 
-		for (int i = 0; i < sizeof(size_type); i++)
+		for (size_t i = 0; i < sizeof(size_type); i++)
 		    ((unsigned char*)&sz)[i] = buf[idx++];
 
 		while (idx < sz) {
@@ -107,7 +107,7 @@ class SettingsGroupBase
 
 		size_type sz = ret.size();
 
-		for (int i = 0; i < sizeof(size_type); i++)
+		for (size_t i = 0; i < sizeof(size_type); i++)
 			ret[endSize + i] = ((unsigned char*)&sz)[i];
 
 		return ret;

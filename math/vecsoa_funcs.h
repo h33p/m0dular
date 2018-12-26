@@ -39,36 +39,45 @@ inline auto& ColumnVec(int col) const
 
 //Micro-optimized version for 4 sized vector chunks since
 //Clang did not want to generate SIMD code on a normal loop
-template<typename F = T, size_t Q = Y, size_t D = X>
-inline typename std::enable_if<max_sse<F, Q>::value, void>::type AddUpDim(int dim, F vv[D][Q])
+template<size_t SWidth, typename F = T, size_t Q = Y, size_t D = X>
+inline void AddUpDimSIMD(int dim, F vv[D][Q])
 {
+	static constexpr size_t Elems = SWidth / (8 * sizeof(F));
+
 	if (!dim)
 		return;
 
-	__m128 a = _mm_loadu_ps(v[dim-1]);
-	__m128 b = _mm_loadu_ps(vv[dim]);
-	a = _mm_add_ps(a, b);
-	_mm_storeu_ps(vv[dim-1], a);
+	for (size_t i = 0; i < Q / Elems; i++) {
+		_m<SWidth, F> a = _mm_loadu<SWidth, F>(v[dim-1] + i * Elems);
+		_m<SWidth, F> b = _mm_loadu<SWidth, F>(vv[dim] + i * Elems);
+		a = _mm_add<SWidth, F>(a, b);
+		_mm_storeu<SWidth, F>(vv[dim-1] + i * Elems, a);
+	}
 
-	AddUpDim<T, Y, X>(--dim, vv);
+	AddUpDimSIMD<SWidth, T, Y, X>(--dim, vv);
 }
 
+
 template<typename F = T, size_t Q = Y, size_t D = X>
-inline typename std::enable_if<max_avx<F, Q>::value, void>::type AddUpDim(int dim, F vv[D][Q])
+inline typename std::enable_if<do_sse<F, Q>::value, void>::type AddUpDim(int dim, F vv[D][Q])
 {
-	if (!dim)
-		return;
-
-	__m256 a = _mm256_loadu_ps(v[dim-1]);
-	__m256 b = _mm256_loadu_ps(vv[dim]);
-	a = _mm256_add_ps(a, b);
-	_mm256_storeu_ps(vv[dim-1], a);
-
-	AddUpDim<T, Y, X>(--dim, vv);
+	AddUpDimSIMD<128, F, Q, D>(dim, vv);
 }
 
 template<typename F = T, size_t Q = Y, size_t D = X>
-inline typename std::enable_if<(!max_sse<F, Q>::value && !max_avx<F, Q>::value), void>::type AddUpDim(int dim, F vv[X][Q])
+inline typename std::enable_if<do_avx<F, Q>::value, void>::type AddUpDim(int dim, F vv[D][Q])
+{
+	AddUpDimSIMD<256, F, Q, D>(dim, vv);
+}
+
+template<typename F = T, size_t Q = Y, size_t D = X>
+inline typename std::enable_if<do_avx512<F, Q>::value, void>::type AddUpDim(int dim, F vv[D][Q])
+{
+	AddUpDimSIMD<512, F, Q, D>(dim, vv);
+}
+
+template<typename F = T, size_t Q = Y, size_t D = X>
+inline typename std::enable_if<!do_simd<F, Q>::value, void>::type AddUpDim(int dim, F vv[X][Q])
 {
 	if (!dim)
 		return;
@@ -418,6 +427,22 @@ constexpr auto& AddCol(int col, const T* val)
 	for (int i = 0; i < Y; i++)
 		v[col][i] += val[i];
 }
+
+
+template<size_t Q = Xt>
+constexpr typename std::enable_if<comp_if<Q, 3>::value, SOA_TYPE>::type
+Cross(const SOA_TYPE& o) const
+{
+	SOA_TYPE ret;
+
+	for (size_t i = 0; i < Yt; i++) {
+		ret[0][i] = v[1][i] * o[2][i] - v[2][i] * o[1][i];
+		ret[1][i] = v[2][i] * o[0][i] - v[0][i] * o[2][i];
+		ret[2][i] = v[0][i] * o[1][i] - v[1][i] * o[0][i];
+	}
+	return ret;
+}
+
 
 
 inline auto Rotate() const

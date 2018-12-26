@@ -59,7 +59,7 @@ int main()
 				sem.Post();
 			}
 
-			for (int i = 0; i < vec->size(); i++) {
+			for (size_t i = 0; i < vec->size(); i++) {
 				printf("%d\n", (*vec)[i]);
 			}
 		} else {
