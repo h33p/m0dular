@@ -230,7 +230,7 @@ struct OptionDataRef
 	constexpr bool TryRefresh()
 	{
 		CheckReloadCnt();
-		return allocID && !G->template IsBlocked(allocID);
+		return allocID && !G->IsBlocked(allocID);
 	}
 };
 
@@ -284,7 +284,7 @@ struct OptionDataPtr
 		} else
 			CheckReloadCnt();
 
-		return allocID && !G->template IsBlocked(allocID);
+		return allocID && !G->IsBlocked(allocID);
 	}
 };
 
