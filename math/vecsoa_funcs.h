@@ -456,5 +456,49 @@ inline auto Rotate() const
 	return ret;
 }
 
+constexpr auto Min(const SOA_TYPE& ov)
+{
+	SOA_TYPE ret;
+
+	for (size_t i = 0; i < Xt; i++)
+		for (size_t o = 0; o < Yt; o++)
+			ret[i][o] = ::Min(v[i][o], ov[i][o]);
+
+	return ret;
+}
+
+constexpr auto Max(const SOA_TYPE& ov)
+{
+	SOA_TYPE ret;
+
+	for (size_t i = 0; i < Xt; i++)
+		for (size_t o = 0; o < Yt; o++)
+			ret[i][o] = ::Min(v[i][o], ov[i][o]);
+
+	return ret;
+}
+
+constexpr auto MinUp()
+{
+	vecb<T, Xt> ret(std::numeric_limits<T>::max());
+
+	for (size_t i = 0; i < Xt; i++)
+		for(size_t o = 0; o < Yt; o++)
+			ret[i] = ::Min(ret[i], v[i][o]);
+
+	return ret;
+}
+
+constexpr auto MaxUp()
+{
+	vecb<T, Xt> ret(std::numeric_limits<T>::min());
+
+	for (size_t i = 0; i < Xt; i++)
+		for(size_t o = 0; o < Yt; o++)
+			ret[i] = ::Max(ret[i], v[i][o]);
+
+	return ret;
+}
+
 #undef SOA_TYPE
 #endif

@@ -14,7 +14,7 @@ static inline float clampf(float a, float min, float max)
 }
 
 template<size_t Y>
-static vec3soa<float, Y> DirBetweenLines(const vec3soa<float, Y>& a, const vec3soa<float, Y>& b, const vec3soa<float, Y>& c, const vec3soa<float, Y>& d)
+[[gnu::flatten]] static vec3soa<float, Y> DirBetweenLines(const vec3soa<float, Y>& __restrict a, const vec3soa<float, Y>& __restrict b, const vec3soa<float, Y>& __restrict c, const vec3soa<float, Y>& __restrict d, vec3soa<float, Y>& sp, vec3soa<float, Y>& ep)
 {
 	auto d1 = (b - a);
 	auto d2 = (d - c);
@@ -37,8 +37,8 @@ static vec3soa<float, Y> DirBetweenLines(const vec3soa<float, Y>& a, const vec3s
 		c1Div[i] = clampf(dirDotC1[i] / d2DotC1[i], 0, 1);
 	}
 
-	auto sp = c + d2 * c1Div;
-	auto ep = a + d1 * c2Div;
+	sp = c + d2 * c1Div;
+	ep = a + d1 * c2Div;
 
 	auto diff = ep - sp;
 
@@ -54,10 +54,11 @@ unsigned int CapsuleCollider::IntersectSOA(vec3soa<float, Y>& __restrict a, vec3
 	soaEnd = end;
 	float radiusSqr = radius * radius;
 
-	vec3soa<float, Y> dirs = DirBetweenLines(a, b, soaStart, soaEnd);
+	vec3soa<float, Y> sp, ep;
+	vec3soa<float, Y> dirs = DirBetweenLines(a, b, soaStart, soaEnd, sp, ep);
 
 	if (out)
-		*out = dirs;
+		*out = ep;
 
 	float lens[Y];
 	dirs.LengthSqr(lens);
@@ -78,10 +79,11 @@ unsigned int CapsuleColliderSOA<N>::Intersect(vec3_t a, vec3_t b, svec3<N>* out)
 	unsigned int flags = 0;
 	svec3<N> va = a, vb = b;
 
-	svec3<N> dirs = DirBetweenLines(va, vb, start, end);
+	svec3<N> sp, ep;
+	svec3<N> dirs = DirBetweenLines(va, vb, start, end, sp, ep);
 
 	if (out)
-		*out = dirs;
+		*out = ep;
 
 	float lens[N];
 	dirs.LengthSqr(lens);

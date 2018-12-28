@@ -14,9 +14,20 @@ struct HistoryList
 		counter = 0;
 	}
 
+	~HistoryList()
+	{
+	    for (size_t i = 0; i < Count(); i++)
+			operator[](i).~T();
+	}
+
 	auto& Push()
 	{
 		counter++;
+
+		if (counter >= C)
+			list[counter % C].~T();
+
+		new(&list[counter % C]) T();
 		return list[counter % C];
 	}
 

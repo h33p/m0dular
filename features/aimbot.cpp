@@ -12,7 +12,7 @@ constexpr int threadQueueMultiplier = 1;
 int tid = 0;
 
 static vec3_t shootAngles;
-static int minDamage = 50;
+static int minDamage = 10;
 float* pointScaleVal = nullptr;
 
 #ifdef AIMBOT_THREADING
@@ -86,7 +86,7 @@ bool doMultipoint = true;
 
 static int ProcessAimPointsSIMD(AimbotLoopData* d)
 {
-	Tracing::TracePointListSIMD<MULTIPOINT_COUNT>(d->localPlayer, d->players, d->hitboxIDsSOA.size(), d->traceEndSOA.data(), d->entID, d->traceOutputsSOA.data());
+	Tracing::TracePointListSIMD<MULTIPOINT_COUNT>(d->localPlayer, d->players, d->hitboxIDsSOA.size(), d->traceEndSOA.data(), d->entID, d->traceOutputsSOA.data(), 1);
 
 	int ret = -1;
 
@@ -110,7 +110,7 @@ static int ProcessAimPointsSIMD(AimbotLoopData* d)
 
 static int ProcessAimPoints(AimbotLoopData* d)
 {
-	Tracing::TracePointList(d->localPlayer, d->players, d->hitboxIDs.size(), d->traceEnd.data(), d->entID, d->traceOutputs.data());
+	Tracing::TracePointList(d->localPlayer, d->players, d->hitboxIDs.size(), d->traceEnd.data(), d->entID, d->traceOutputs.data(), 1);
 
 	int ret = -1;
 

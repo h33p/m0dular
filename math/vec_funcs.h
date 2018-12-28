@@ -264,5 +264,45 @@ Rotate(T angle)
 	return *this;
 }
 
+constexpr auto Min(const VEC_TYPE& ov)
+{
+	VEC_TYPE ret;
+
+	for (size_t i = 0; i < N; i++)
+		ret[i] = ::Min(v[i], ov[i]);
+
+	return ret;
+}
+
+constexpr auto Max(const VEC_TYPE& ov)
+{
+	VEC_TYPE ret;
+
+	for (size_t i = 0; i < N; i++)
+		ret[i] = ::Max(v[i], ov[i]);
+
+	return ret;
+}
+
+constexpr auto MinUp()
+{
+	T ret = std::numeric_limits<T>::max();
+
+	for (size_t i = 0; i < N; i++)
+		ret = ::Min(ret, v[i]);
+
+	return ret;
+}
+
+constexpr auto MaxUp()
+{
+	T ret = std::numeric_limits<T>::min();
+
+	for (size_t i = 0; i < N; i++)
+		ret = ::Max(ret, v[i]);
+
+	return ret;
+}
+
 #undef VEC_TYPE
 #endif

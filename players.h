@@ -72,28 +72,28 @@ HitboxList
 struct alignas(SIMD_COUNT * 4)
 Players
 {
-	vec3_t boundsStart[MAX_PLAYERS];
-	vec3_t boundsEnd[MAX_PLAYERS];
-	vec3_t origin[MAX_PLAYERS];
-	vec3_t eyePos[MAX_PLAYERS];
-	vec3_t velocity[MAX_PLAYERS];
-	CapsuleColliderSOA<SIMD_COUNT> colliders[MAX_PLAYERS][NumOfSIMD(MAX_HITBOXES)];
-	HitboxList hitboxes[MAX_PLAYERS];
-	void* instance[MAX_PLAYERS];
-	int flags[MAX_PLAYERS];
-	int health[MAX_PLAYERS];
-	int armor[MAX_PLAYERS];
-	float time[MAX_PLAYERS];
-	char name[MAX_PLAYERS][NAME_LEN];
+	vec3_t* boundsStart;
+	vec3_t* boundsEnd;
+	vec3_t* origin;
+	vec3_t* eyePos;
+	vec3_t* velocity;
+	CapsuleColliderSOA<SIMD_COUNT> (*colliders)[NumOfSIMD(MAX_HITBOXES)];
+	HitboxList* hitboxes;
+	void** instance;
+	int* flags;
+	int* health;
+	int* armor;
+	float* time;
+	char (*name)[NAME_LEN];
+	float* fov;
+	matrix<3,4> (*bones)[MAX_BONES];
 	//Used for sorting the player
 	int sortIDs[MAX_PLAYERS];
 	int unsortIDs[MAX_PLAYERS];
-	float fov[MAX_PLAYERS];
 	int count;
 	float globalTime;
 
-	//Late in the list, since this data is a couple of pages long
-	matrix<3,4> bones[MAX_PLAYERS][MAX_BONES];
+	static constexpr size_t sizePerPlayer = sizeof(boundsStart[0]) + sizeof(boundsEnd[0]) + sizeof(origin[0]) + sizeof(eyePos[0]) + sizeof(velocity[0]) + sizeof(colliders[0]) + sizeof(hitboxes[0]) + sizeof(instance[0]) + sizeof(flags[0]) + sizeof(health[0]) + sizeof(armor[0]) + sizeof(time[0]) + sizeof(name[0]) + sizeof(fov[0]) + sizeof(bones[0]);
 
 	const auto& operator=(Players& o)
 	{
@@ -106,10 +106,65 @@ Players
 		int uid = unsortIDs[id];
 		if (uid >= 0 && uid < MAX_PLAYERS) {
 			int sid = target.sortIDs[uid];
-			if (sid >= 0 && sid < MAX_PLAYERS)
+			if (sid >= 0 && sid < MAX_PLAYERS && sid < target.count)
 				return sid;
 		}
 		return MAX_PLAYERS;
+	}
+
+	void FreeAll()
+	{
+		if (count && boundsStart) {
+			free((void*)boundsStart);
+		}
+
+		memset(this, 0, sizeof(*this));
+		memset(sortIDs, -1, sizeof(sortIDs));
+		memset(unsortIDs, -1, sizeof(sortIDs));
+	}
+
+	void Allocate(int cnt)
+	{
+		FreeAll();
+		count = cnt;
+
+		void* data = malloc(sizePerPlayer * count);
+
+		boundsStart = (vec3_t*)data;
+		boundsEnd = boundsStart + count;
+		origin = boundsEnd + count;
+		eyePos = origin + count;
+		velocity = eyePos + count;
+		colliders = (decltype(colliders))(velocity + count);
+		hitboxes = (decltype(hitboxes))(colliders + count);
+		instance = (decltype(instance))(hitboxes + count);
+		flags = (decltype(flags))(instance + count);
+		health = flags + count;
+		armor = health + count;
+		time = (decltype(time))(armor + count);
+		name = (decltype(name))(time + count);
+		fov = (decltype(fov))(name + count);
+		bones = (decltype(bones))(fov + count);
+
+		memset(sortIDs, -1, sizeof(sortIDs));
+		memset(unsortIDs, -1, sizeof(sortIDs));
+	}
+
+	Players(int cnt)
+	{
+	    Allocate(cnt);
+	}
+
+	Players()
+	{
+		memset(this, 0, sizeof(*this));
+		memset(sortIDs, -1, sizeof(sortIDs));
+		memset(unsortIDs, -1, sizeof(sortIDs));
+	}
+
+	~Players()
+	{
+		FreeAll();
 	}
 };
 

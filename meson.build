@@ -86,7 +86,7 @@ settings = executable('settings_test', files(['tests/settings.cpp', 'utils/crc32
 allocator = executable('allocator_test', files(['tests/allocator.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0'], link_args : linker_args, dependencies : thread_dep)
 shmem_allocator = executable('shmem_allocator_test', files(['tests/shmemalloc.cpp', 'utils/named_semaphores.cpp']), cpp_args : compile_args + ['-DOFFSET_POINTER_DEBUG'], link_args : linker_args, dependencies : thread_dep)
 kd_tree = executable('kd_tree_test', files(['tests/kd_tree.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0', '-DOFFSET_POINTER_DEBUG'], link_args : linker_args, dependencies : thread_dep)
-intersect = executable('intersect_test', files(['tests/intersect.cpp', 'utils/intersect.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0', '-DOFFSET_POINTER_DEBUG'], link_args : linker_args, dependencies : thread_dep)
+intersect = executable('intersect_test', files(['tests/intersect.cpp', 'utils/intersect.cpp', 'utils/intersect_box.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0', '-DOFFSET_POINTER_DEBUG'], link_args : linker_args, dependencies : thread_dep)
 
 
 test('shared mutex', smtx)
