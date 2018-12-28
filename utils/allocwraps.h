@@ -180,7 +180,7 @@ template<auto& BASE, bool REALLOCATABLE = false>
 class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 {
   public:
-	static constexpr uintptr_t& base = BASE;
+	static constexpr auto& base = BASE;
 
 	template<typename F>
 	struct pointer_t : offset_pointer_t<F, BASE>
@@ -311,7 +311,7 @@ class free_list_allocator : public generic_free_list_allocator<BASE, REALLOCATAB
 {
 
   public:
-	static constexpr uintptr_t& base = BASE;
+	static constexpr auto& base = BASE;
 
 	template<typename F>
 	using pointer_t = typename generic_free_list_allocator<BASE, REALLOCATABLE>::template pointer_t<F>;

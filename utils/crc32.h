@@ -17,7 +17,8 @@ constexpr auto GenCRCTable(T polynomial = 0xedb88320) {
 		T crc = byte;
 
 		for (int i = 0; i < numIterations; i++) {
-			T mask = -(crc & 1);
+			//Can be done with -(crc & 1), but then MSVC complains about overflows
+			T mask = (crc & 1) ? ~T(0) : T(0);
 			crc = (crc >> 1) ^ (polynomial & mask);
 		}
 

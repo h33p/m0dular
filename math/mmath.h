@@ -143,13 +143,8 @@ constexpr size_t Clz(size_t inp)
 		return __builtin_clzll(inp);
 	return __builtin_clz(inp);
 #else
-	inp |= inp >> 1;
-    inp |= inp >> 2;
-    inp |= inp >> 4;
-    inp |= inp >> 8;
-    inp |= inp >> 16;
-	if (sizeof(inp) == 8)
-		inp |= inp >> 32;
+	for (size_t i = 0; (1 << i) < sizeof(size_t) * 8; i++)
+		inp |= inp >> (1 << i);
     return sizeof(inp) * 8 - PopCnt(inp);
 #endif
 }

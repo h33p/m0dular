@@ -40,7 +40,7 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 {
 	char* p = (char*)pattern-1;
 	bool inRelDeref = false;
-	bool derefDone = false;
+	[[maybe_unused]] bool derefDone = false;
 	int relIdx = 0;
 	int relStartIdx = 0;
 	int idx = 0;

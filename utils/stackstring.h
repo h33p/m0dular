@@ -49,13 +49,13 @@ struct StackString
 		unroll_read<len2 - len / 2>((rstt*)stack2e, (rstt*)Array + len / 2, len2 - len / 2);
 		unroll_read<len / 2>((rstt*)stack2s, (rstt*)Array, len / 2);
 
-		for (int i = (len - 1) * sizeof(rstt); i < slen; i++)
+		for (int i = (len - 1) * sizeof(rstt); i < (int)slen; i++)
 			((char*)stack2)[i] = Array[i];
 
 		unroll_read<len2 - len / 2>((rstt*)stack + len / 2, (rstt*)stack2e, len2 - len / 2);
 		unroll_read<len / 2>((rstt*)stack, (rstt*)stack2s, len / 2);
 
-		for (int i = (len - 1) * sizeof(rstt); i < slen; i++)
+		for (int i = (len - 1) * sizeof(rstt); i < (int)slen; i++)
 			stack[i] = ((char*)stack2)[i];
 
 	}

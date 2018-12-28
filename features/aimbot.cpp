@@ -185,7 +185,7 @@ static int LoopPlayers(AimbotLoopData* d)
 {
 	int ret = 0;
 
-	for (size_t i = 0; i < d->players->count; i++) {
+	for (int i = 0; i < d->players->count; i++) {
 		if (~d->ignoreList[d->players->unsortIDs[i] / 64] & (1ull << (d->players->unsortIDs[i] % 64)) && d->players->flags[i] & Flags::HITBOXES_UPDATED && ~d->players->flags[i] & Flags::FRIENDLY &&
 			//The following check is just a rough way to clear the unrelated players from view. A better check would be to intersect AABB with previous target to see if they overlap. If they do not, then simply quit the loop since the players should be sorted by FOV
 			d->players->fov[i] - 30.f < d->target.fov) {
