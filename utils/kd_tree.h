@@ -62,10 +62,23 @@ struct KDTree
 		DeleteNode(rootNode, ref->value, 0);
 	}
 
+	void WalkDelete(pointer root)
+	{
+		if (!root)
+			return;
+
+		WalkDelete(root->left);
+		WalkDelete(root->right);
+		alloc.deallocate(root, 1);
+		treeSize--;
+	}
+
 	void Clear()
 	{
 		//TODO: walk deallocate
 		//alloc.FreeAll();
+		WalkDelete(rootNode);
+		assert(!treeSize);
 		rootNode = 0;
 		treeSize = 0;
 	}
@@ -148,7 +161,7 @@ struct KDTree
 				pointer min = FindMin((pointer)root->right, d, 0);
 				root->value = ((pointer)root->right)->value;
 				root->right = DeleteNode((pointer)root->right, min->value, depth + 1);
-			} else if (rootNode.left) {
+			} else if (root->left) {
 				pointer min = FindMin((pointer)root->left, d, 0);
 				root->value = ((pointer)root->left)->value;
 				root->left = DeleteNode((pointer)root->left, min->value, depth + 1);

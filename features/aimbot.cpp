@@ -117,7 +117,7 @@ static int ProcessAimPoints(AimbotLoopData* d)
 	for (size_t i = 0; i < d->hitboxIDs.size(); i++) {
 		if (true && CompareDataLegit(d, d->traceOutputs[i], d->traceEnd[i], d->hitboxIDs[i], d->fovList[i]))
 			ret = d->entID;//return d->entID;
-		else if (true && CompareDataRage(d, d->traceOutputs[i], d->traceEnd[i], d->hitboxIDs[i], d->fovList[i]))
+		else if (false && CompareDataRage(d, d->traceOutputs[i], d->traceEnd[i], d->hitboxIDs[i], d->fovList[i]))
 		    ret = d->entID;//return d->entID;
 	}
 
@@ -335,11 +335,12 @@ static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_
 	}
 }
 
-AimbotTarget Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, unsigned char hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)], float pointScale[MAX_HITBOXES])
+AimbotTarget Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, unsigned char hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)], float pointScale[MAX_HITBOXES], int minDamage)
 {
 	AimbotTarget target;
 	shootAngles = localPlayer->angles + localPlayer->aimOffset;
 	pointScaleVal = pointScale;
+	::minDamage = minDamage;
 
 	FindBestTarget(&target, track, futureTrack, localPlayer, hitboxList, ignoreList);
 
