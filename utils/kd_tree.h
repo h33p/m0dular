@@ -75,8 +75,6 @@ struct KDTree
 
 	void Clear()
 	{
-		//TODO: walk deallocate
-		//alloc.FreeAll();
 		WalkDelete(rootNode);
 		assert(!treeSize);
 		rootNode = 0;

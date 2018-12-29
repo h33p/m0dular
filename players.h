@@ -10,6 +10,7 @@
 
 #include "math/mmath.h"
 #include "utils/intersect.h"
+#include "utils/shared_utils.h"
 #include <string.h>
 
 constexpr int PLAYER_CHUNKS = NumOfSIMD(MAX_PLAYERS);
@@ -45,10 +46,6 @@ enum Keys
 	JUMP = (1 << 2)
 };
 
-/*
-  Somewhat localized, since this is lare enough data which would make the
-	reads jump around a lot when accessing very similar data.
-*/
 struct alignas(SIMD_COUNT * 4)
 HitboxList
 {
@@ -69,8 +66,7 @@ HitboxList
   To access the player by its internal ID, use the sortIDs member
 */
 
-struct alignas(SIMD_COUNT * 4)
-Players
+struct Players
 {
 	vec3_t* boundsStart;
 	vec3_t* boundsEnd;
@@ -94,6 +90,7 @@ Players
 	float globalTime;
 
 	static constexpr size_t sizePerPlayer = sizeof(boundsStart[0]) + sizeof(boundsEnd[0]) + sizeof(origin[0]) + sizeof(eyePos[0]) + sizeof(velocity[0]) + sizeof(colliders[0]) + sizeof(hitboxes[0]) + sizeof(instance[0]) + sizeof(flags[0]) + sizeof(health[0]) + sizeof(armor[0]) + sizeof(time[0]) + sizeof(name[0]) + sizeof(fov[0]) + sizeof(bones[0]);
+	static constexpr size_t extraAlignmentNeeds = alignof(vec3_t) * 5 + alignof(decltype(colliders[0])) + alignof(decltype(hitboxes[0])) + alignof(void*) + alignof(int) * 3 + alignof(float) + alignof(char*) + alignof(float) + alignof(decltype(bones));
 
 	const auto& operator=(Players& o)
 	{
@@ -128,23 +125,24 @@ Players
 		FreeAll();
 		count = cnt;
 
-		void* data = malloc(sizePerPlayer * count);
+		void* data = malloc(sizePerPlayer * count + extraAlignmentNeeds);
 
+		//We have to align some of the data
 		boundsStart = (vec3_t*)data;
-		boundsEnd = boundsStart + count;
-		origin = boundsEnd + count;
-		eyePos = origin + count;
-		velocity = eyePos + count;
-		colliders = (decltype(colliders))(velocity + count);
-		hitboxes = (decltype(hitboxes))(colliders + count);
-		instance = (decltype(instance))(hitboxes + count);
-		flags = (decltype(flags))(instance + count);
-		health = flags + count;
-		armor = health + count;
-		time = (decltype(time))(armor + count);
-		name = (decltype(name))(time + count);
-		fov = (decltype(fov))(name + count);
-		bones = (decltype(bones))(fov + count);
+		boundsEnd = AlignUp(boundsStart + count);
+		origin = AlignUp(boundsEnd + count);
+		eyePos = AlignUp(origin + count);
+		velocity = AlignUp(eyePos + count);
+		colliders = AlignUp((decltype(colliders))(velocity + count));
+		hitboxes = AlignUp((decltype(hitboxes))(colliders + count));
+		instance = AlignUp((decltype(instance))(hitboxes + count));
+		flags = AlignUp((decltype(flags))(instance + count));
+		health = AlignUp(flags + count);
+		armor = AlignUp(health + count);
+		time = AlignUp((decltype(time))(armor + count));
+		name = AlignUp((decltype(name))(time + count));
+		fov = AlignUp((decltype(fov))(name + count));
+		bones = AlignUp((decltype(bones))(fov + count));
 
 		memset(sortIDs, -1, sizeof(sortIDs));
 		memset(unsortIDs, -1, sizeof(sortIDs));

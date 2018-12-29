@@ -232,6 +232,8 @@ class FreeListAllocator : public Allocator {
 
 		if (!startPtr) {
 			void** startPtr2 = (void**)malloc(totalSize);
+			if (!startPtr2)
+				throw;
 			if constexpr (REALLOCATABLE) {
 				baseOffset = 0;
 				BASE = (uintptr_t)startPtr2;
