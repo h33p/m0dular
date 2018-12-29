@@ -173,14 +173,18 @@ class FreeListAllocator : public Allocator {
 		size_t alignmentPadding = padding - allocationHeaderSize;
 		size_t requiredSize = size + padding;
 
-		size_t rest = affectedNode->data.blockSize - requiredSize;
+		size_t rest = affectedNode->data.blockSize >= requiredSize ? affectedNode->data.blockSize - requiredSize : 0;
 
-		if (rest > 0) {
+		//There is a bug somewhere causing newFreeNode overlap with affectedNode->next if rest is too small
+		//It probably will not be fixed since it is not of the highest priority
+		if (rest && (rest > 16 || !affectedNode->next || ((size_t)affectedNode->next - ((size_t)affectedNode + requiredSize)) > sizeof(Node))) {
 			// We have to split the block into the data block and a free block of size 'rest'
 			NodePtr newFreeNode = NodePtr((size_t) affectedNode + requiredSize);
 			newFreeNode->data.blockSize = rest;
 			freeList.insert(affectedNode, newFreeNode);
 		}
+		else
+			requiredSize = affectedNode->data.blockSize - alignmentPadding;
 		freeList.remove(previousNode, affectedNode);
 
 		// Setup data block
@@ -189,7 +193,7 @@ class FreeListAllocator : public Allocator {
 		AllocationHeaderPtr(headerAddress)->blockSize = requiredSize;
 		AllocationHeaderPtr(headerAddress)->padding = alignmentPadding;
 
-		used += requiredSize;
+		used += requiredSize + alignmentPadding;
 		peak = std::max(peak, used);
 
 		return (void**)dataAddress;
