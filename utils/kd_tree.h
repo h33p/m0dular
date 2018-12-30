@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <memory>
+#include <assert.h>
 
 template<typename T, typename Pointer2 = uintptr_t*>
 struct TreeNode_t

@@ -59,35 +59,39 @@ int main()
 
 	int status = 0;
 
-	for (int i = 0; i < ALLOC_COUNT; i++) {
-		auto ref = tree.Insert(KDPoint<int>(rand() % DIMS, rand() % DIMS));
-		testData.push_back(**ref);
-	}
+	for (size_t i = 0; i < 3; i++) {
+		tree.Clear();
 
-	for (int i = 0; i < DIMS; i++) {
-		for (int o = 0; o < DIMS; o++) {
-			KDPoint<int> pt(i, o);
-			auto ref = tree.Find(pt);
+		for (int i = 0; i < ALLOC_COUNT; i++) {
+			auto ref = tree.Insert(KDPoint<int>(rand() % DIMS, rand() % DIMS));
+			testData.push_back(**ref);
+		}
 
-			if (ref) {
-				auto iter = std::find(testData.begin(), testData.end(), pt);
-				if (iter != testData.end())
-					;//putchar('#');
-				else {
-					putchar('X');
-				    status++;
-				}
-			} else {
-				auto iter = std::find(testData.begin(), testData.end(), pt);
-				if (iter == testData.end())
-					;//putchar('.');
-				else {
-					putchar('x');
-				    status++;
+		for (int i = 0; i < DIMS; i++) {
+			for (int o = 0; o < DIMS; o++) {
+				KDPoint<int> pt(i, o);
+				auto ref = tree.Find(pt);
+
+				if (ref) {
+					auto iter = std::find(testData.begin(), testData.end(), pt);
+					if (iter != testData.end())
+						;//putchar('#');
+					else {
+						putchar('X');
+						status++;
+					}
+				} else {
+					auto iter = std::find(testData.begin(), testData.end(), pt);
+					if (iter == testData.end())
+						;//putchar('.');
+					else {
+						putchar('x');
+						status++;
+					}
 				}
 			}
+			putchar('\n');
 		}
-		putchar('\n');
 	}
 
 	return status;

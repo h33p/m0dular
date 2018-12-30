@@ -1,7 +1,7 @@
 project('m0dular-framework', 'cpp', 'c', default_options : ['c_std=c11', 'cpp_std=c++17', 'b_ndebug=if-release'])
 
 #compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces']
-compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces', '-Wno-format', '-Wno-unused-command-line-argument']
+compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces', '-Wno-format', '-Wno-unused-command-line-argument', '-Wno-comment']
 linker_args = compile_args
 
 if not get_option('buildtype').startswith('debug')
@@ -34,6 +34,7 @@ if meson.is_cross_build()
 			includes += join_paths(bf_dir, 'include/um')
 			includes += join_paths(bf_dir, 'include/shared')
 			includes += join_paths(bf_dir, 'include/winrt')
+			includes += join_paths(bf_dir, 'include/boost')
 			libraries += join_paths(bf_dir, 'lib/clang')
 			libraries += join_paths(bf_dir, join_paths('lib/msvc', cpu_family))
 			libraries += join_paths(bf_dir, join_paths('lib/ucrt', cpu_family))
