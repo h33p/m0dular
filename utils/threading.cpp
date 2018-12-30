@@ -54,10 +54,10 @@ void Threading::InitThreads()
 {
 	//numThreads = std::thread::hardware_concurrency();
 	numThreads = NUM_THREADS;
-	if (numThreads < 2)
+	/*if (numThreads < 2)
 		numThreads = 2;
 	if (numThreads >= 8)
-		numThreads -= 2;
+	numThreads -= 2;*/
 	threads = (struct JobThread*)calloc(numThreads, sizeof(struct JobThread));
 
 	for (unsigned int i = 0; i < numThreads; i++)
