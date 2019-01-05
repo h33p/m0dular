@@ -1,6 +1,8 @@
 #ifndef STACK_STRING
 #define STACK_STRING
 
+#include <stddef.h>
+
 #define ST(x) StackString(x)
 
 typedef unsigned char stt;

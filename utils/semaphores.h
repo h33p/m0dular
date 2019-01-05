@@ -12,7 +12,7 @@
 #elif defined(__APPLE__)
 #include <dispatch/dispatch.h>
 #else
-#include "windows.h"
+#include "../wincludes.h"
 #endif
 
 class Semaphore
