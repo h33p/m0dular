@@ -16,6 +16,9 @@
 #include <nmmintrin.h>
 #endif
 
+//This cuts compile times when avx512 is not in use
+#include "clang_avx512.h"
+
 #if defined(__clang__) && defined(_MSC_VER)
 #pragma push_macro("_MM_HINT_T0")
 #undef _MM_HINT_T0
@@ -25,6 +28,7 @@
 #undef _MM_HINT_T2
 #endif
 #include <xmmintrin.h>
+
 #include <immintrin.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
