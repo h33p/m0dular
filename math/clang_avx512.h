@@ -1,6 +1,6 @@
 
 //A hack to improve compile times on clang
-#if !defined(__AVX512F__) && !defined(__AVX512CD__) && !defined(__AVX512ER__)
+#if defined(__clang__) && !defined(__AVX512F__) && !defined(__AVX512CD__) && !defined(__AVX512ER__)
 #define __AVX512BITALGINTRIN_H
 #define __AVX512BWINTRIN_H
 #define __AVX512CDINTRIN_H
