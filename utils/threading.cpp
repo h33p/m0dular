@@ -9,29 +9,42 @@ uint64_t Threading::_QueueJob(JobFn function, void* data, bool ref)
 	job.args = data;
 	job.function = function;
 	job.ref = ref;
-	return jobs.Enqueue(job);
+	uint64_t ret = jobs.Enqueue(job);
+	return ret;
 }
 
 static void* __stdcall ThreadLoop(void* t)
 {
 	struct JobThread* thread = (struct JobThread*)t;
 
+#ifdef MTR_ENABLED
+	char threadName[64];
+	snprintf(threadName, 63, "worker thread %d", thread->id);
+	MTR_META_THREAD_NAME(threadName);
+#endif
+
 	Threading::threadID = thread->id;
 
 	struct Job job;
 	thread->isRunning = true;
+	MTR_BEGIN("workers", "run_job_thread");
 	while (!thread->shouldQuit) {
 		if (job.id ^ ~0ull) {
 			thread->queueEmpty = false;
+			MTR_BEGIN("workers", "execute_job");
 			job.function(job.args);
+			MTR_END("workers", "execute_job");
 			if (!job.ref)
 				free(job.args);
 		} else
 			thread->queueEmpty = true;
 		struct LList<struct Job>* tJobs = thread->jobs;
 		thread->jLock->unlock();
+		MTR_BEGIN("workers", "pop_job");
 		job = tJobs->PopFront(thread->jLock);
+		MTR_END("workers", "pop_job");
 	}
+	MTR_END("workers", "run_job_thread");
 	thread->isRunning = false;
 	return nullptr;
 }
@@ -52,6 +65,7 @@ static void InitThread(struct JobThread* thread, int id)
 
 void Threading::InitThreads()
 {
+	MTR_META_THREAD_NAME("main thread");
 	//numThreads = std::thread::hardware_concurrency();
 	numThreads = NUM_THREADS;
 	/*if (numThreads < 2)
@@ -103,6 +117,7 @@ int Threading::EndThreads()
 void Threading::FinishQueue()
 {
 	bool empty = false;
+	MTR_BEGIN("workers", "finish_queue");
 	while (!empty) {
 		empty = true;
 		for (unsigned int i = 0; i < numThreads; i++) {
@@ -112,6 +127,7 @@ void Threading::FinishQueue()
 			threads[i].jLock->unlock();
 		}
 	}
+	MTR_END("workers", "finish_queue");
 }
 
 JobThread* Threading::BindThread(LList<struct Job>* jobsQueue)

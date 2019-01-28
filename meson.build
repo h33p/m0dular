@@ -1,7 +1,7 @@
 project('m0dular-framework', 'cpp', 'c', default_options : ['c_std=c11', 'cpp_std=c++17', 'b_ndebug=if-release'])
 
 #compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces']
-compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces', '-Wno-format', '-Wno-unused-command-line-argument', '-Wno-comment', '-Wno-aggressive-loop-optimizations']
+compile_args = ['-D_POSIX_C_SOURCE=200809L', '-DNUM_THREADS=8', '-Werror', '-Wno-missing-braces', '-Wno-format', '-Wno-unused-command-line-argument', '-Wno-comment', '-Wno-aggressive-loop-optimizations']
 linker_args = compile_args
 
 if not get_option('buildtype').startswith('debug')
@@ -78,11 +78,11 @@ endforeach
 
 thread_dep = dependency('threads')
 
-smtx = executable('shared_mutex_test', files(['tests/shared_mutex.cpp', 'utils/threading.cpp', 'utils/shared_mutex.cpp', 'utils/semaphores.cpp', 'utils/mutex.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
-mtx = executable('mutex_test', files(['tests/mutex.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
-tpool = executable('thread_pool_test', files(['tests/thread_pool.cpp', 'utils/threading.cpp', 'utils/packed_heap.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+smtx = executable('shared_mutex_test', files(['tests/shared_mutex.cpp', 'utils/threading.cpp', 'utils/atomic_lock.cpp', 'utils/shared_mutex.cpp', 'utils/semaphores.cpp', 'utils/mutex.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+mtx = executable('mutex_test', files(['tests/mutex.cpp', 'utils/threading.cpp', 'utils/atomic_lock.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+tpool = executable('thread_pool_test', files(['tests/thread_pool.cpp', 'utils/atomic_lock.cpp', 'utils/threading.cpp', 'utils/packed_heap.cpp', 'utils/mutex.cpp', 'utils/semaphores.cpp', 'submodules/minitrace/minitrace.c']), cpp_args : compile_args + ['-DMTR_ENABLED'], c_args : compile_args + ['-DMTR_ENABLED'], link_args : linker_args, dependencies : thread_dep)
 crc = executable('crc_test', files(['tests/crc.cpp', 'utils/crc32.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
-#code_crypt = executable('code_crypt_test', files(['tests/codecrypt.cpp', 'utils/codecrypt.cpp', 'utils/threading.cpp', 'utils/mutex.cpp', 'utils/shared_mutex.cpp', 'utils/semaphores.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
+#code_crypt = executable('code_crypt_test', files(['tests/codecrypt.cpp', 'utils/codecrypt.cpp', 'utils/threading.cpp', 'utils/atomic_lock.cpp', 'utils/mutex.cpp', 'utils/shared_mutex.cpp', 'utils/semaphores.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 settings = executable('settings_test', files(['tests/settings.cpp', 'utils/crc32.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args, link_args : linker_args, dependencies : thread_dep)
 allocator = executable('allocator_test', files(['tests/allocator.cpp', 'utils/packed_heap.cpp']), cpp_args : compile_args + ['-DPACKED_HEAP_DEBUG', '-DPACKED_HEAP_MERGE_SECTIONS=0'], link_args : linker_args, dependencies : thread_dep)
 shmem_allocator = executable('shmem_allocator_test', files(['tests/shmemalloc.cpp', 'utils/named_semaphores.cpp']), cpp_args : compile_args + ['-DOFFSET_POINTER_DEBUG'], link_args : linker_args, dependencies : thread_dep)

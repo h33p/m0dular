@@ -1,0 +1,3 @@
+[submodule "submodules/minitrace"]
+	path = submodules/minitrace
+	url = https://github.com/hrydgard/minitrace.git

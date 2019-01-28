@@ -5,7 +5,9 @@
 #include "mutex.h"
 #include "semaphores.h"
 #include "packed_heap.h"
+#include "atomic_lock.h"
 #include <atomic>
+#include "../submodules/minitrace/minitrace.h"
 
 #if defined(__posix__)
 #include <unistd.h>
@@ -57,7 +59,7 @@ struct LList
 
 	PackedHeapL<LEntry> entries;
 
-	Mutex lock;
+    Mutex lock;
 	bool quit;
 	idx_t front;
 	idx_t back;
