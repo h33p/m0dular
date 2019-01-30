@@ -1,8 +1,8 @@
 #include "atomic_lock.h"
 
 AtomicLock::AtomicLock()
-	: 	lck(ATOMIC_FLAG_INIT)
 {
+	lck.clear();
 }
 
 AtomicLock::~AtomicLock()

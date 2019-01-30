@@ -1,7 +1,7 @@
 #ifndef ALLOCWRAPS_H
 #define ALLOCWRAPS_H
 
-template<auto& BASE, bool REALLOCATABLE>
+template<auto& BASE, bool REALLOCATABLE, bool FIXED_SIZE_ALLOCATIONS>
 class FreeListAllocator;
 
 #include "freelistallocator.h"
@@ -176,8 +176,8 @@ struct offset_pointer_t
 	}
 };
 
-template<auto& BASE, bool REALLOCATABLE = false>
-class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
+template<auto& BASE, bool REALLOCATABLE = false, bool FIXED_SIZE_ALLOCATIONS = false>
+class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>
 {
   public:
 	static constexpr auto& base = BASE;
@@ -279,7 +279,7 @@ class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 
 	template<typename... Args>
 	generic_free_list_allocator(Args... args)
-		: FreeListAllocator<BASE, REALLOCATABLE>(args...)
+	: FreeListAllocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>(args...)
 	{
 	}
 
@@ -306,15 +306,15 @@ class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 	}
 };
 
-template<typename T, auto& BASE, bool REALLOCATABLE = true, size_t SIZE = 10000, PlacementPolicy PLACEMENT_POLICY = PlacementPolicy::FIND_FIRST>
-class free_list_allocator : public generic_free_list_allocator<BASE, REALLOCATABLE>
+template<typename T, auto& BASE, bool REALLOCATABLE = true, size_t SIZE = 10000, PlacementPolicy PLACEMENT_POLICY = PlacementPolicy::FIND_FIRST, bool FIXED_SIZE_ALLOCATIONS = false>
+class free_list_allocator : public generic_free_list_allocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>
 {
 
   public:
 	static constexpr auto& base = BASE;
 
 	template<typename F>
-	using pointer_t = typename generic_free_list_allocator<BASE, REALLOCATABLE>::template pointer_t<F>;
+	using pointer_t = typename generic_free_list_allocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>::template pointer_t<F>;
 	using value_type = T;
 	using pointer = pointer_t<T>;
 	using size_type = size_t;
@@ -323,13 +323,13 @@ class free_list_allocator : public generic_free_list_allocator<BASE, REALLOCATAB
 	using propagate_on_container_move_assignment = std::false_type;
 
 	free_list_allocator(size_t size = SIZE, PlacementPolicy pPolicy = PLACEMENT_POLICY)
-	: generic_free_list_allocator<BASE, REALLOCATABLE>(size * sizeof(T), pPolicy)
+	: generic_free_list_allocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>(size * sizeof(T), pPolicy)
 	{
 	}
 
 	template<typename H, size_t SZ2, PlacementPolicy PP2>
-	free_list_allocator(const free_list_allocator<H, BASE, REALLOCATABLE, SZ2, PP2>& o)
-	: generic_free_list_allocator<BASE, REALLOCATABLE>(SZ2 * sizeof(T), PP2)
+	free_list_allocator(const free_list_allocator<H, BASE, REALLOCATABLE, SZ2, PP2, FIXED_SIZE_ALLOCATIONS>& o)
+	: generic_free_list_allocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>(SZ2 * sizeof(T), PP2)
 	{
 	}
 
@@ -340,23 +340,23 @@ class free_list_allocator : public generic_free_list_allocator<BASE, REALLOCATAB
 
 	inline pointer allocate(size_type size)
 	{
-		return generic_free_list_allocator<BASE, REALLOCATABLE>::template allocate<T>(size);
+		return generic_free_list_allocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>::template allocate<T>(size);
 	}
 
 	inline void deallocate(pointer ptr, size_type size)
 	{
-		generic_free_list_allocator<BASE, REALLOCATABLE>::template deallocate<T>(ptr, size);
+		generic_free_list_allocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>::template deallocate<T>(ptr, size);
 	}
 
 	inline bool operator==(const free_list_allocator& o)
 	{
-		return generic_free_list_allocator<BASE, REALLOCATABLE>::template operator==(o);
+		return generic_free_list_allocator<BASE, REALLOCATABLE, FIXED_SIZE_ALLOCATIONS>::template operator==(o);
 	}
 
 	template<typename Other>
 	struct rebind
 	{
-	    using other = free_list_allocator<Other, BASE, REALLOCATABLE, SIZE, PLACEMENT_POLICY>;
+	    using other = free_list_allocator<Other, BASE, REALLOCATABLE, SIZE, PLACEMENT_POLICY, FIXED_SIZE_ALLOCATIONS>;
 	};
 };
 
