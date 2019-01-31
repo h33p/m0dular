@@ -65,6 +65,9 @@ struct HistoryList
 
 	void Reset()
 	{
+		for (size_t i = 0; i < Count(); i++)
+			operator[](i).~T();
+
 		counter = 0;
 	}
 
