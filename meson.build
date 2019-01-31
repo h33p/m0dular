@@ -1,15 +1,15 @@
 project('m0dular-framework', 'cpp', 'c', default_options : ['c_std=c11', 'cpp_std=c++17', 'b_ndebug=if-release'])
 
 #compile_args = ['-DNUM_THREADS=2', '-Werror', '-Wno-missing-braces']
-compile_args = ['-D_POSIX_C_SOURCE=200809L', '-DNUM_THREADS=8', '-Werror', '-Wno-missing-braces', '-Wno-format', '-Wno-unused-command-line-argument', '-Wno-comment', '-Wno-aggressive-loop-optimizations']
+compile_args = ['-D_POSIX_C_SOURCE=200809L', '-DNUM_THREADS=8', '-Werror', '-Wno-missing-braces', '-Wno-format', '-Wno-unused-command-line-argument', '-Wno-comment']
 linker_args = compile_args
 
 if not get_option('buildtype').startswith('debug')
 	compile_args += ['-O2', '-fno-stack-protector', '-msse4.2']
 	linker_args += ['-flto', '-O0']
 else
-  compile_args += ['-g', '-O0']
-#  linker_args += ['-lasan']
+  #compile_args += ['-g', '-O0', '-fsanitize=address']
+  #linker_args += ['-lasan']
 endif
 
 includes = []

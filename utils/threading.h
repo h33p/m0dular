@@ -75,20 +75,33 @@ struct LList
 		lastPopID = 0;
 	}
 
-	uint64_t Enqueue(const T& data) {
+	uint64_t Enqueue(const T& data, bool priority = false) {
 		lock.lock();
 		idx_t entry = entries.Alloc();
-		entries[entry] = { data, 0, back };
-		entries[entry].entry.id = lastID;
-		uint64_t id = lastID++;
-		if (back)
-			entries[back].prev = entry;
-		if (!front) {
+		if (priority) {
+			entries[entry] = { data, front, 0 };
+			entries[entry].entry.id = lastID;
+			if (front)
+				entries[front].next = entry;
+			if (!back) {
+				back = entry;
+				entries[back].next = 0;
+			}
+			entries[entry].prev = front;
 			front = entry;
-			entries[front].prev = 0;
+		} else {
+			entries[entry] = { data, 0, back };
+			entries[entry].entry.id = lastID;
+			if (back)
+				entries[back].prev = entry;
+			if (!front) {
+				front = entry;
+				entries[front].prev = 0;
+			}
+			entries[entry].next = back;
+			back = entry;
 		}
-		entries[entry].next = back;
-		back = entry;
+		uint64_t id = lastID++;
 		lock.unlock();
 		sem.Post();
 		return id;
@@ -148,7 +161,7 @@ namespace Threading
 {
 	extern unsigned int numThreads;
 	extern thread_local int threadID;
-	uint64_t _QueueJob(JobFn function, void* data, bool ref = false);
+	uint64_t _QueueJob(JobFn function, void* data, bool ref = false, bool priority = false);
 	void InitThreads();
 	int EndThreads();
 	void FinishQueue();
@@ -159,15 +172,15 @@ namespace Threading
 	void JoinThread(thread_t thread, void** returnVal);
 
 	template<typename N, typename T>
-	uint64_t QueueJob(N function, T data) {
+	uint64_t QueueJob(N function, T data, bool priority = false) {
 		void* d = malloc(sizeof(T));
 		memcpy(d, (void*)&data, sizeof(T));
-		return _QueueJob((JobFn)function, d, false);
+		return _QueueJob((JobFn)function, d, false, priority);
 	}
 
 	template<typename N, typename T>
-	uint64_t QueueJobRef(N function, T* data) {
-		return _QueueJob((JobFn)function, (void*)data, true);
+	uint64_t QueueJobRef(N function, T* data, bool priority = false) {
+		return _QueueJob((JobFn)function, (void*)data, true, priority);
 	}
 }
 

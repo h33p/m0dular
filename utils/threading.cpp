@@ -3,13 +3,13 @@
 static LList<struct Job> jobs;
 thread_local int Threading::threadID = -1;
 
-uint64_t Threading::_QueueJob(JobFn function, void* data, bool ref)
+uint64_t Threading::_QueueJob(JobFn function, void* data, bool ref, bool priority)
 {
 	Job job;
 	job.args = data;
 	job.function = function;
 	job.ref = ref;
-	uint64_t ret = jobs.Enqueue(job);
+	uint64_t ret = jobs.Enqueue(job, priority);
 	return ret;
 }
 

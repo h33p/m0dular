@@ -177,7 +177,7 @@ class FreeListAllocator : public Allocator {
 
 		//There is a bug somewhere causing newFreeNode overlap with affectedNode->next if rest is too small
 		//It probably will not be fixed since it is not of the highest priority
-		if (rest && (rest > 16 || !affectedNode->next || ((size_t)affectedNode->next - ((size_t)affectedNode + requiredSize)) > sizeof(Node))) {
+		if (rest && (rest > 16 || !affectedNode->next || ((size_t)affectedNode->next - ((size_t)affectedNode + requiredSize)) > sizeof(Node)) && (size_t)affectedNode + requiredSize + sizeof(Node) < (size_t)start_ptr + totalSize) {
 			// We have to split the block into the data block and a free block of size 'rest'
 			NodePtr newFreeNode = NodePtr((size_t) affectedNode + requiredSize);
 			newFreeNode->data.blockSize = rest;

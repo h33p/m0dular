@@ -8,8 +8,8 @@
 #include "../utils/allocwraps.h"
 #include <algorithm>
 
-constexpr int DIMS = 1500;
-constexpr int ALLOC_COUNT = 7000;
+constexpr int DIMS = 150;
+constexpr int ALLOC_COUNT = 700;
 
 template<typename T>
 struct KDPoint
@@ -60,7 +60,9 @@ int main()
 	int status = 0;
 
 	for (size_t i = 0; i < 3; i++) {
+		printf("Clearing...\n");
 		tree.Clear();
+		testData.clear();
 
 		for (int i = 0; i < ALLOC_COUNT; i++) {
 			auto ref = tree.Insert(KDPoint<int>(rand() % DIMS, rand() % DIMS));
@@ -68,6 +70,9 @@ int main()
 		}
 
 		for (int i = 0; i < DIMS; i++) {
+
+			bool dirty = false;
+
 			for (int o = 0; o < DIMS; o++) {
 				KDPoint<int> pt(i, o);
 				auto ref = tree.Find(pt);
@@ -78,6 +83,7 @@ int main()
 						;//putchar('#');
 					else {
 						putchar('X');
+						dirty = true;
 						status++;
 					}
 				} else {
@@ -86,11 +92,13 @@ int main()
 						;//putchar('.');
 					else {
 						putchar('x');
+						dirty = true;
 						status++;
 					}
 				}
 			}
-			putchar('\n');
+			if (dirty)
+				putchar('\n');
 		}
 	}
 

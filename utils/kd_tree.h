@@ -32,9 +32,16 @@ struct KDTree
 
 	Alloc alloc;
 	pointer rootNode;
+	pointer freeNode;
 	size_t treeSize;
+	size_t freeSize = 0;
 
   public:
+
+	~KDTree()
+	{
+		Free();
+	}
 
 	constexpr size_t size()
 	{
@@ -70,7 +77,7 @@ struct KDTree
 
 		WalkDelete(root->left);
 		WalkDelete(root->right);
-		alloc.deallocate(root, 1);
+		Deallocate(root);
 		treeSize--;
 	}
 
@@ -82,12 +89,47 @@ struct KDTree
 		treeSize = 0;
 	}
 
+	void WalkFree(pointer root)
+	{
+		if (!root)
+			return;
+
+		WalkFree(root->left);
+		root->left = nullptr;
+		alloc.deallocate(root, 1);
+	}
+
+	void Free()
+	{
+		WalkFree(freeNode);
+		assert(!freeSize);
+		freeNode = nullptr;
+	}
+
   private:
+
+	pointer Allocate()
+	{
+		if (freeNode) {
+			pointer ret = freeNode;
+			freeNode = freeNode->left;
+			freeSize--;
+			return ret;
+		}
+		return alloc.allocate(1);
+	}
+
+	void Deallocate(pointer ptr)
+	{
+		ptr->left = freeNode;
+		freeNode = ptr;
+		freeSize++;
+	}
 
 	pointer Insert(pointer root, const T& entry, unsigned int depth, pointer* out)
 	{
 		if (!root) {
-			root = alloc.allocate(1);
+			root = Allocate();
 			*root = TreeNode();
 		    treeSize++;
 		    root->value = entry;
@@ -165,7 +207,7 @@ struct KDTree
 				root->value = ((pointer)root->left)->value;
 				root->left = DeleteNode((pointer)root->left, min->value, depth + 1);
 			} else {
-				alloc.deallocate(root, 1);
+				Deallocate(root);
 				treeSize--;
 				return 0;
 			}
