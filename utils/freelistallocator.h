@@ -111,7 +111,7 @@ struct AllocationHeader {
 	char padding;
 };
 
-template<auto& BASE, bool REALLOCATABLE, bool FIXED_SIZE_ALLOCATIONS>
+template<auto& BASE, bool REALLOCATABLE>
 class FreeListAllocator : public Allocator {
   protected:
 
@@ -177,12 +177,13 @@ class FreeListAllocator : public Allocator {
 
 		//There is a bug somewhere causing newFreeNode overlap with affectedNode->next if rest is too small
 		//It probably will not be fixed since it is not of the highest priority
-		if (rest && (rest > 16 || !affectedNode->next || ((size_t)affectedNode->next - ((size_t)affectedNode + requiredSize)) > sizeof(Node)) && (size_t)affectedNode + requiredSize + sizeof(Node) < (size_t)start_ptr + totalSize) {
+		if (rest && (rest > 16 || !affectedNode->next || ((size_t)affectedNode->next - ((size_t)affectedNode + requiredSize)) > sizeof(Node))) {
 			// We have to split the block into the data block and a free block of size 'rest'
 			NodePtr newFreeNode = NodePtr((size_t) affectedNode + requiredSize);
 			newFreeNode->data.blockSize = rest;
 			freeList.insert(affectedNode, newFreeNode);
-		} else
+		}
+		else
 			requiredSize = affectedNode->data.blockSize - alignmentPadding;
 		freeList.remove(previousNode, affectedNode);
 
@@ -211,25 +212,19 @@ class FreeListAllocator : public Allocator {
 
 		NodePtr it = freeList.head;
 		NodePtr itPrev = nullptr;
-
-		int iterCount = 0;
-
-		if constexpr (!FIXED_SIZE_ALLOCATIONS) {
-			while (it) {
-				iterCount++;
-				if (ptr < it) {
-					freeList.insert(itPrev, freeNode);
-					break;
-				}
-				itPrev = it;
-				it = it->next;
+		while (it) {
+			if (ptr < it) {
+				freeList.insert(itPrev, freeNode);
+				break;
 			}
+			itPrev = it;
+			it = it->next;
 		}
 
 		used -= freeNode->data.blockSize;
 
-		if constexpr(!FIXED_SIZE_ALLOCATIONS)
-			Coalescence(itPrev, freeNode);
+		// Merge contiguous nodes
+		Coalescence(itPrev, freeNode);
 	}
 
 	void Init(void* startPtr = nullptr)
@@ -270,26 +265,19 @@ class FreeListAllocator : public Allocator {
   protected:
 	FreeListAllocator(FreeListAllocator &freeListAllocator);
 
-	NodePtr Coalescence(NodePtr previousNode, NodePtr freeNode)
+	void Coalescence(NodePtr previousNode, NodePtr freeNode)
 	{
-		if (freeNode->next) {
-			int delta = (int)((size_t) freeNode->next - ((size_t) freeNode + freeNode->data.blockSize));
-			if (delta == 0) {
-				freeNode->data.blockSize += freeNode->next->data.blockSize;
-				freeList.remove(freeNode, freeNode->next);
-			}
+		if (freeNode->next &&
+			(size_t) freeNode + freeNode->data.blockSize == (size_t) freeNode->next) {
+			freeNode->data.blockSize += freeNode->next->data.blockSize;
+			freeList.remove(freeNode, freeNode->next);
 		}
 
-		if (previousNode) {
-			int delta = (int)((size_t) previousNode + previousNode->data.blockSize - (size_t) freeNode);
-			if (delta == 0) {
-				previousNode->data.blockSize += freeNode->data.blockSize;
-				freeList.remove(previousNode, freeNode);
-				return Coalescence(nullptr, previousNode);
-			}
+		if (previousNode &&
+			(size_t) previousNode + previousNode->data.blockSize == (size_t) freeNode) {
+			previousNode->data.blockSize += freeNode->data.blockSize;
+			freeList.remove(previousNode, freeNode);
 		}
-
-		return freeNode;
 	}
 
 	void Find(size_t size, size_t alignment, size_t& padding, NodePtr& previousNode, NodePtr& foundNode)
@@ -373,7 +361,6 @@ class FreeListAllocator : public Allocator {
 		    lastNode->next = nullptr;
 			freeList.insert(itPrev, lastNode);
 			Coalescence(itPrev, lastNode);
-			start_ptr = (decltype(start_ptr))((size_t)newPtr);
 		}
 	}
 };
