@@ -97,6 +97,7 @@ struct KDTree
 		WalkFree(root->left);
 		root->left = nullptr;
 		alloc.deallocate(root, 1);
+		freeSize--;
 	}
 
 	void Free()
