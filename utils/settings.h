@@ -212,6 +212,12 @@ struct OptionDataRef
 	constexpr OptionDataRef()
 		: allocID() {}
 
+	constexpr void Init(const T& v)
+	{
+		allocID = G->ReserveOption(CRC, v);
+		reloadCnt = G->ReloadCount();
+	}
+
 	constexpr void CheckReloadCnt()
 	{
 		size_t gCnt = G->ReloadCount();
@@ -248,11 +254,18 @@ struct OptionDataPtr
 
 	constexpr OptionDataPtr(const T& v)
 		: g(G),
-		allocID(G->ReserveOption(CRC, v)), reloadCnt(0) {}
+		allocID(G->ReserveOption(CRC, v)), reloadCnt(G->ReloadCount()) {}
 
 	constexpr OptionDataPtr()
 		: g(G),
 		allocID(), reloadCnt(0) {}
+
+	constexpr void Init(const T& v)
+	{
+		g = G;
+		allocID = G->ReserverOption(CRC, v);
+		reloadCnt = G->ReloadCount();
+	}
 
 	constexpr void CheckReloadCnt()
 	{
@@ -309,6 +322,11 @@ struct SettingsChain<T, CRC, G>
 		return *BaseType::allocID;
 	}
 
+	constexpr void Init(const T& v)
+	{
+		BaseType::Init(v);
+	}
+
 	constexpr void Set(const T& val)
 	{
 		BaseType::Refresh();
@@ -333,6 +351,12 @@ struct SettingsChain<T, CRC, G, Args...>
 		if (BaseType::TryRefresh())
 			return *BaseType::allocID;
 		return next.Get();
+	}
+
+	constexpr void Init(const T& v)
+	{
+		BaseType::Init(v);
+		next.Init(v);
 	}
 
 	constexpr void Set(const T& val)
@@ -361,6 +385,11 @@ struct Option : public SettingsChain<T, CRC, Chain...>
 
 	constexpr Option()
 		: Container() {}
+
+	constexpr void Init(const T& v)
+	{
+		Container::Init(v);
+	}
 
 	constexpr operator T()
 	{
