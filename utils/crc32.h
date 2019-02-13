@@ -49,5 +49,6 @@ constexpr crcs_t operator ""_crc32(const char* cv, size_t size)
 }
 
 crcs_t Crc32(const char* str, int len);
+crcs_t Crc32(const char* str);
 
 #endif

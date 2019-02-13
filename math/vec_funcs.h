@@ -304,5 +304,15 @@ constexpr auto MaxUp()
 	return ret;
 }
 
+constexpr auto Lerp(const VEC_TYPE& ov, float time)
+{
+	return *this + time * (ov - *this);
+}
+
+constexpr auto LerpClamped(const VEC_TYPE& ov, float time)
+{
+	return *this + Min(1.f, Max(0.f, time)) * (ov - *this);
+}
+
 #undef VEC_TYPE
 #endif

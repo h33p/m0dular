@@ -500,5 +500,15 @@ constexpr auto MaxUp()
 	return ret;
 }
 
+constexpr auto Lerp(const SOA_TYPE& ov, float time)
+{
+	return *this + time * (ov - *this);
+}
+
+constexpr auto LerpClamped(const SOA_TYPE& ov, float time)
+{
+	return *this + Min(1.f, Max(0.f, time)) * (ov - *this);
+}
+
 #undef SOA_TYPE
 #endif
