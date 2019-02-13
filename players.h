@@ -75,7 +75,7 @@ struct Players
 	vec3_t* velocity;
 	CapsuleColliderSOA<SIMD_COUNT> (*colliders)[NumOfSIMD(MAX_HITBOXES)];
 	HitboxList* hitboxes;
-	void** instance;
+	[[deprecated("Use of this member inside history worlds leads to undefined behavior")]] void** instance;
 	int* flags;
 	int* health;
 	int* armor;
