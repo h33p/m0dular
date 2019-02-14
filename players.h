@@ -64,6 +64,7 @@ HitboxList
 /*
   All player data is sorted in some fashion.
   To access the player by its internal ID, use the sortIDs member
+  Player instance should be kept externally as it may lead to invalid pointers on history worlds
 */
 
 struct Players
@@ -75,7 +76,6 @@ struct Players
 	vec3_t* velocity;
 	CapsuleColliderSOA<SIMD_COUNT> (*colliders)[NumOfSIMD(MAX_HITBOXES)];
 	HitboxList* hitboxes;
-	[[deprecated("Use of this member inside history worlds leads to undefined behavior")]] void** instance;
 	int* flags;
 	int* health;
 	int* armor;
@@ -89,7 +89,7 @@ struct Players
 	int count;
 	float globalTime;
 
-	static constexpr size_t sizePerPlayer = sizeof(boundsStart[0]) + sizeof(boundsEnd[0]) + sizeof(origin[0]) + sizeof(eyePos[0]) + sizeof(velocity[0]) + sizeof(colliders[0]) + sizeof(hitboxes[0]) + sizeof(instance[0]) + sizeof(flags[0]) + sizeof(health[0]) + sizeof(armor[0]) + sizeof(time[0]) + sizeof(name[0]) + sizeof(fov[0]) + sizeof(bones[0]);
+	static constexpr size_t sizePerPlayer = sizeof(boundsStart[0]) + sizeof(boundsEnd[0]) + sizeof(origin[0]) + sizeof(eyePos[0]) + sizeof(velocity[0]) + sizeof(colliders[0]) + sizeof(hitboxes[0]) + sizeof(flags[0]) + sizeof(health[0]) + sizeof(armor[0]) + sizeof(time[0]) + sizeof(name[0]) + sizeof(fov[0]) + sizeof(bones[0]);
 	static constexpr size_t extraAlignmentNeeds = alignof(vec3_t) * 5 + alignof(decltype(colliders[0])) + alignof(decltype(hitboxes[0])) + alignof(void*) + alignof(int) * 3 + alignof(float) + alignof(char*) + alignof(float) + alignof(decltype(bones));
 
 	const auto& operator=(Players& o)
@@ -135,8 +135,7 @@ struct Players
 		velocity = AlignUp(eyePos + count);
 		colliders = AlignUp((decltype(colliders))(velocity + count));
 		hitboxes = AlignUp((decltype(hitboxes))(colliders + count));
-		instance = AlignUp((decltype(instance))(hitboxes + count));
-		flags = AlignUp((decltype(flags))(instance + count));
+		flags = AlignUp((decltype(flags))(hitboxes + count));
 		health = AlignUp(flags + count);
 		armor = AlignUp(health + count);
 		time = AlignUp((decltype(time))(armor + count));
