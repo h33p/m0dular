@@ -20,12 +20,12 @@ template<size_t Y, typename ClassSource, typename Source, typename Dest>
 
 	uint64_t ret = 0;
 
-	for (size_t i = 0; i < Y; i++)
+	for (size_t i = 0; i < sizeof(tmin) / sizeof(tmin[0]); i++)
 		if (tmax[i] >= fmaxf(0.f, tmin[i]) && tmin[i] < 1)
 			ret |= (1ull << i);
 
 	if (out) {
-		for (size_t i = 0; i < Y; i++)
+		for (size_t i = 0; i < sizeof(tmin) / sizeof(tmin[0]); i++)
 			tmin[i] = fminf(tmin[i], 0);
 		*out = d * tmin + a;
 	}

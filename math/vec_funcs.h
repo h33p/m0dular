@@ -172,7 +172,7 @@ template<size_t Q = N>
 constexpr typename std::enable_if<comp_if<Q, 3>::value, VEC_TYPE<T, 3>>::type
 Cross(const VEC_TYPE& o) const
 {
-	VEC_TYPE<T, 3> ret;
+	VEC_TYPE<T, 3> ret(0);
 	ret[0] = v[1] * o[2] - v[2] * o[1];
 	ret[1] = v[2] * o[0] - v[0] * o[2];
 	ret[2] = v[0] * o[1] - v[1] * o[0];
@@ -266,7 +266,7 @@ Rotate(T angle)
 
 constexpr auto Min(const VEC_TYPE& ov)
 {
-	VEC_TYPE ret;
+	VEC_TYPE ret(0);
 
 	for (size_t i = 0; i < N; i++)
 		ret[i] = ::Min(v[i], ov[i]);
@@ -276,7 +276,7 @@ constexpr auto Min(const VEC_TYPE& ov)
 
 constexpr auto Max(const VEC_TYPE& ov)
 {
-	VEC_TYPE ret;
+	VEC_TYPE ret(0);
 
 	for (size_t i = 0; i < N; i++)
 		ret[i] = ::Max(v[i], ov[i]);

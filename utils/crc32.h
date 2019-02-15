@@ -30,9 +30,9 @@ constexpr auto GenCRCTable(T polynomial = 0xedb88320) {
 
 static constexpr auto crc32Tab = GenCRCTable<crcs_t>();
 
-#define CCRC32(x) calc_constexpr<crcs_t, ConstantCrc32(x, sizeof(x) - 1)>::value
+#define CCRC32(x) calc_constexpr<crcs_t, Crc32(x, sizeof(x) - 1)>::value
 
-constexpr crcs_t ConstantCrc32(const char* cv, size_t size)
+constexpr crcs_t Crc32(const char* cv, size_t size)
 {
 	crcs_t ret(0);
 	ret = ~ret;
@@ -43,12 +43,20 @@ constexpr crcs_t ConstantCrc32(const char* cv, size_t size)
 	return ~ret;
 }
 
-constexpr crcs_t operator ""_crc32(const char* cv, size_t size)
+constexpr crcs_t Crc32(const char* cv)
 {
-	return ConstantCrc32(cv, size);
+	crcs_t ret(0);
+	ret = ~ret;
+
+	for (size_t i = 0; cv[i]; i++)
+		ret = crc32Tab[((ret) ^ (cv[i])) & 0xff] ^ ((ret) >> 8);
+
+	return ~ret;
 }
 
-crcs_t Crc32(const char* str, int len);
-crcs_t Crc32(const char* str);
+constexpr crcs_t operator ""_crc32(const char* cv, size_t size)
+{
+	return Crc32(cv);
+}
 
 #endif

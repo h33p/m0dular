@@ -324,7 +324,7 @@ struct vecSoa
 	{
 		constexpr int mv = X < 3 ? X : 3;
 		constexpr int mb = Y < B ? Y : B;
-		vec3soa<T, B> ret;
+		vec3soa<T, B> ret = {};
 		for (size_t i = 0; i < mv; i++)
 			for (size_t o = 0; o < mb; o++)
 				ret[i][o] = v[i][o];
@@ -356,6 +356,8 @@ template<size_t X>
 using zvec = vecSoa<float, X, 16>;
 template<size_t X>
 using nvec = vecSoa<float, X, SIMD_COUNT>;
+
+static_assert(std::is_pod<xvec<3>>::value);
 
 template <size_t N>
 using veci = vecb<int, N>;

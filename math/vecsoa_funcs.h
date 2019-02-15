@@ -372,8 +372,8 @@ constexpr auto& AssignCol(int col, const vecp<T, Y>& vec)
 
 constexpr auto& AssignCol(int col, T val)
 {
-	vecb<T, Y> vec;
-	return AssignCol(col, vec.Assign(val));
+	vecb<T, Y> vec(val);
+	return AssignCol(col, vec);
 }
 
 
@@ -428,12 +428,22 @@ constexpr auto& AddCol(int col, const T* val)
 		v[col][i] += val[i];
 }
 
+constexpr auto GetColAsVecb(int col)
+{
+	return *(vecb<T, Y>*)v[col];
+}
+
+constexpr auto GetColAsVecp(int col)
+{
+	return *(vecp<T, Y>*)v[col];
+}
+
 
 template<size_t Q = Xt>
 constexpr typename std::enable_if<comp_if<Q, 3>::value, SOA_TYPE>::type
 Cross(const SOA_TYPE& o) const
 {
-	SOA_TYPE ret;
+	SOA_TYPE ret(0);
 
 	for (size_t i = 0; i < Yt; i++) {
 		ret[0][i] = v[1][i] * o[2][i] - v[2][i] * o[1][i];
@@ -445,9 +455,9 @@ Cross(const SOA_TYPE& o) const
 
 
 
-inline auto Rotate() const
+constexpr auto Rotate() const
 {
-	vecSoa<T, Y, X> ret;
+	vecSoa<T, Y, X> ret(0);
 
 	for (size_t i = 0; i < X; i++)
 		for (size_t o = 0; o < Y; o++)
@@ -458,7 +468,7 @@ inline auto Rotate() const
 
 constexpr auto Min(const SOA_TYPE& ov)
 {
-	SOA_TYPE ret;
+	SOA_TYPE ret(0);
 
 	for (size_t i = 0; i < Xt; i++)
 		for (size_t o = 0; o < Yt; o++)
@@ -469,7 +479,7 @@ constexpr auto Min(const SOA_TYPE& ov)
 
 constexpr auto Max(const SOA_TYPE& ov)
 {
-	SOA_TYPE ret;
+	SOA_TYPE ret(0);
 
 	for (size_t i = 0; i < Xt; i++)
 		for (size_t o = 0; o < Yt; o++)
@@ -480,22 +490,22 @@ constexpr auto Max(const SOA_TYPE& ov)
 
 constexpr auto MinUp()
 {
-	vecb<T, Xt> ret(std::numeric_limits<T>::max());
+	vecb<T, Yt> ret(std::numeric_limits<T>::max());
 
-	for (size_t i = 0; i < Xt; i++)
-		for(size_t o = 0; o < Yt; o++)
-			ret[i] = ::Min(ret[i], v[i][o]);
+	for(size_t o = 0; o < Xt; o++)
+		for (size_t i = 0; i < Yt; i++)
+			ret[i] = ::Min(ret[i], v[o][i]);
 
 	return ret;
 }
 
 constexpr auto MaxUp()
 {
-	vecb<T, Xt> ret(std::numeric_limits<T>::min());
+	vecb<T, Yt> ret(std::numeric_limits<T>::min());
 
-	for (size_t i = 0; i < Xt; i++)
-		for(size_t o = 0; o < Yt; o++)
-			ret[i] = ::Max(ret[i], v[i][o]);
+	for(size_t o = 0; o < Xt; o++)
+		for (size_t i = 0; i < Yt; i++)
+			ret[i] = ::Max(ret[i], v[o][i]);
 
 	return ret;
 }
