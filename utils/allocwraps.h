@@ -43,6 +43,11 @@ struct offset_pointer_t
 #endif
 	}
 
+	constexpr offset_pointer_t(const offset_pointer_t& o)
+	{
+		*this = o;
+	}
+
 	constexpr offset_pointer_t& operator=(const offset_pointer_t& o)
 	{
 		ptr = o.ptr;
@@ -195,6 +200,11 @@ class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 		constexpr pointer_t()
 			: base_class()
 		{
+		}
+
+		constexpr pointer_t(const pointer_t& o)
+		{
+			*this = o;
 		}
 
 		constexpr pointer_t& operator=(const pointer_t& o)

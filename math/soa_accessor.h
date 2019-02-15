@@ -45,7 +45,7 @@
 			T py[Y - 1];								\
 			T z;										\
 														\
-			inline T& operator[](int idx)				\
+			inline T& operator[](size_t idx)			\
 			{											\
 				return (&x)[(int)idx * (int)Y];			\
 			}											\
@@ -64,7 +64,7 @@
 			SOA_VECTOR_CAST(vecp);						\
 		} acc2;											\
 														\
-		inline auto& operator[](int idx) const 			\
+		inline auto& operator[](size_t idx) const		\
 		{												\
 			return *(SoaAccessor*)(((T*)&acc2)+idx);	\
 		}												\

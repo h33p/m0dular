@@ -222,7 +222,7 @@ struct OptionDataRef
 	{
 		size_t gCnt = G->ReloadCount();
 		if (reloadCnt != gCnt)
-			allocID = (pointer)0;
+			allocID = (pointer)nullptr;
 		reloadCnt = gCnt;
 	}
 

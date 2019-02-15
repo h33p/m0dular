@@ -108,7 +108,7 @@ struct FreeHeader {
 
 struct AllocationHeader {
 	uint32_t blockSize;
-	char padding;
+	unsigned char padding;
 };
 
 template<auto& BASE, bool REALLOCATABLE>
@@ -181,7 +181,7 @@ class FreeListAllocator : public Allocator {
 		if (rest >= sizeof(Node) && (rest > 16 || !affectedNode->next || ((size_t)affectedNode->next - ((size_t)affectedNode + requiredSize)) > sizeof(Node)) && (size_t)affectedNode + requiredSize + sizeof(Node) < (size_t)start_ptr + totalSize) {
 			// We have to split the block into the data block and a free block of size 'rest'
 			NodePtr newFreeNode = NodePtr((size_t) affectedNode + requiredSize);
-			newFreeNode->data.blockSize = rest;
+			newFreeNode->data.blockSize = (uint32_t)rest;
 			freeList.insert(affectedNode, newFreeNode);
 		}
 		else
@@ -193,8 +193,8 @@ class FreeListAllocator : public Allocator {
 		// Setup data block
 		size_t headerAddress = (size_t) affectedNode + alignmentPadding;
 		size_t dataAddress = headerAddress + allocationHeaderSize;
-		AllocationHeaderPtr(headerAddress)->blockSize = requiredSize;
-		AllocationHeaderPtr(headerAddress)->padding = alignmentPadding;
+		AllocationHeaderPtr(headerAddress)->blockSize = (uint32_t)requiredSize;
+		AllocationHeaderPtr(headerAddress)->padding = (uint8_t)alignmentPadding;
 
 		used += requiredSize + alignmentPadding;
 		peak = std::max(peak, used);

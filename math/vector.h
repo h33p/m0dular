@@ -100,12 +100,12 @@ struct vecb
 		return !operator==(o);
 	}
 
-	constexpr T& operator[](int idx)
+	constexpr T& operator[](size_t idx)
 	{
 		return v[idx];
 	}
 
-	constexpr const T& operator[](int idx) const
+	constexpr const T& operator[](size_t idx) const
 	{
 		return v[idx];
 	}
@@ -161,12 +161,12 @@ struct vecp
 		return !operator==(o);
 	}
 
-	constexpr T& operator[](int idx)
+	constexpr T& operator[](size_t idx)
 	{
 		return v[idx];
 	}
 
-	constexpr const T& operator[](int idx) const
+	constexpr const T& operator[](size_t idx) const
 	{
 		return v[idx];
 	}
@@ -266,12 +266,12 @@ struct vec3soa
 		return ret;
 	}
 
-	constexpr T* operator[](int idx)
+	constexpr T* operator[](size_t idx)
 	{
 		return v[idx];
 	}
 
-	constexpr const T* operator[](int idx) const
+	constexpr const T* operator[](size_t idx) const
 	{
 		return v[idx];
 	}
@@ -309,12 +309,12 @@ struct vecSoa
 		return !operator==(o);
 	}
 
-    constexpr T* operator[](int idx)
+    constexpr T* operator[](size_t idx)
 	{
 		return v[idx];
 	}
 
-    constexpr const T* operator[](int idx) const
+    constexpr const T* operator[](size_t idx) const
 	{
 		return v[idx];
 	}
