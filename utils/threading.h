@@ -107,12 +107,7 @@ struct LList
 		return id;
 	}
 
-	T PopFront(Mutex* lck = nullptr) {
-		sem.Wait();
-		if (quit) {
-			sem.Post();
-			return Job();
-		}
+	T DoPopFront(Mutex* lck) {
 		lock.lock();
 		if (!front) {
 			lock.unlock();
@@ -131,6 +126,27 @@ struct LList
 		entries.Free(entry);
 		lock.unlock();
 		return ret;
+	}
+
+	T PopFront(Mutex* lck = nullptr) {
+		sem.Wait();
+		if (quit) {
+			sem.Post();
+			return Job();
+		}
+		return DoPopFront(lck);
+	}
+
+	T TryPopFront() {
+		if (sem.TimedWait(0))
+			return Job();
+
+		if (quit) {
+			sem.Post();
+			return Job();
+		}
+
+		return DoPopFront(nullptr);
 	}
 
 #ifdef _MSC_VER
@@ -164,7 +180,7 @@ namespace Threading
 	uint64_t _QueueJob(JobFn function, void* data, bool ref = false, bool priority = false);
 	void InitThreads();
 	int EndThreads();
-	void FinishQueue();
+	void FinishQueue(bool executeJobs = false);
 	JobThread* BindThread(LList<struct Job>* jobsQueue);
 	void UnbindThread(LList<struct Job>* jobsQueue);
 	thread_t StartThread(threadFn start, void* param, bool detached = true);

@@ -13,6 +13,15 @@ uint64_t Threading::_QueueJob(JobFn function, void* data, bool ref, bool priorit
 	return ret;
 }
 
+static void RunJob(struct Job& job)
+{
+	MTR_BEGIN("workers", "execute_job");
+	job.function(job.args);
+	MTR_END("workers", "execute_job");
+	if (!job.ref)
+		free(job.args);
+}
+
 static void* __stdcall ThreadLoop(void* t)
 {
 	struct JobThread* thread = (struct JobThread*)t;
@@ -31,11 +40,7 @@ static void* __stdcall ThreadLoop(void* t)
 	while (!thread->shouldQuit) {
 		if (job.id ^ ~0ull) {
 			thread->queueEmpty = false;
-			MTR_BEGIN("workers", "execute_job");
-			job.function(job.args);
-			MTR_END("workers", "execute_job");
-			if (!job.ref)
-				free(job.args);
+			RunJob(job);
 		} else
 			thread->queueEmpty = true;
 		struct LList<struct Job>* tJobs = thread->jobs;
@@ -114,15 +119,29 @@ int Threading::EndThreads()
 	return ret;
 }
 
-void Threading::FinishQueue()
+void Threading::FinishQueue(bool executeJobs)
 {
 	bool empty = false;
 	MTR_BEGIN("workers", "finish_queue");
 	while (!empty) {
 		empty = true;
 		for (unsigned int i = 0; i < numThreads; i++) {
-			if (threads[i].jobs)
-				while (!threads[i].jobs->IsEmpty());
+			if (executeJobs) {
+				auto jobList = &jobs;
+				if (threads[i].jobs)
+					jobList = threads[i].jobs;
+
+				while (1) {
+					struct Job job = jobList->TryPopFront();
+					if (job.id == ~0ull)
+						break;
+					RunJob(job);
+				}
+			} else {
+				if (threads[i].jobs)
+					while (!threads[i].jobs->IsEmpty());
+			}
+
 			threads[i].jLock->lock();
 			threads[i].jLock->unlock();
 		}

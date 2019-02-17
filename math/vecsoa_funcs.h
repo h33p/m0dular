@@ -517,7 +517,7 @@ constexpr auto Lerp(const SOA_TYPE& ov, float time)
 
 constexpr auto LerpClamped(const SOA_TYPE& ov, float time)
 {
-	return *this + Min(1.f, Max(0.f, time)) * (ov - *this);
+	return *this + ::Min(1.f, ::Max(0.f, time)) * (ov - *this);
 }
 
 #undef SOA_TYPE
