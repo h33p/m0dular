@@ -18,6 +18,7 @@
   3) Offset the resulting address to the wanted place with @
   4) Instruct the first dereference to be IP-relative with []
   5) After each dereference, an offset can be specified with +NUM or -NUM, a space is needed if the next non-offset character is a part of exact pattern match
+  6) Manual relative dereference is done with :OFF,SIZE
 */
 
 namespace PatternScan

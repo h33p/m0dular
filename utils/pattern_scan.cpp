@@ -91,12 +91,21 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 				operations.emplace_back(pOperation((*p == '*') ? 0 : 3, idx));
 			p++;
 
-			while (*p == '+' || *p == '-' || *p == '*' || *p == '^') {
+			while (*p == '+' || *p == '-' || *p == '*' || *p == '^' || *p == ':') {
 				if (*p == '*')
 					operations.emplace_back(pOperation(*p++ == '*' ? 0 : 1));
 				else if (*p == '^')
 					operations.emplace_back(pOperation(*p++ == '^' ? 3 : 1));
-				else {
+				else if (*p == ':') {
+					pOperation op = pOperation();
+					p++;
+					op.offset = strtol(p, &p, 10);
+					p++;
+					op.v1 = strtol(p, &p, 10);
+					op.op = 2;
+					p--;
+					operations.emplace_back(op);
+				} else {
 					pOperation op = pOperation();
 					if (*p == '+' || *p == '-')
 						op.offset = strtol(p, &p, 10);
