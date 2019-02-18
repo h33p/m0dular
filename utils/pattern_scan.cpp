@@ -81,7 +81,6 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 			op.op = 2;
 			op.offset = initDerefIdx - relStartIdx;
 			op.v1 = idx - relStartIdx;
-
 		} else if (*p == '*' || *p == '^') {
 			assert(!derefDone);
 			derefDone = true;
@@ -112,8 +111,11 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 			if (*p == '?')
 				p--;
 
-		} else
+		} else {
 			patternBytes[idx++] = strtoul(p, &p, 16);
+			if (*p != ' ')
+				p--;
+		}
 	}
 
 	length = idx;
