@@ -292,10 +292,5 @@ AimbotTarget Aimbot::RunAimbot(HistoryList<Players, BACKTRACK_TICKS>* track, His
 
 	FindBestTarget(&target, track, futureTrack, localPlayer, hitboxList, ignoreList);
 
-	if (target.id >= 0) {
-		vec3_t angles = (target.targetVec - localPlayer->eyePos).GetAngles(true);
-		localPlayer->angles = angles - localPlayer->aimOffset;
-	}
-
 	return target;
 }
