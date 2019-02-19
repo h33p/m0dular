@@ -54,29 +54,49 @@ class SettingsGroupBase
 		if (buf[idx++] != HEADER_MAGIC)
 		    return ~0;
 
-		size_type sz = buf.size();
+		size_type bsz = buf.size();
 
 		for (size_t i = 0; i < sizeof(size_type); i++)
-		    ((unsigned char*)&sz)[i] = buf[idx++];
+		    ((unsigned char*)&bsz)[i] = buf[idx++];
 
-		while (idx < sz) {
+		while (idx < bsz) {
 			size_type sz = 0;
 			crcs_t crc = 0;
 
 			for (size_t o = 0; o < sizeof(sz); o++)
 				((unsigned char*)&sz)[o] = buf[idx + o];
+
 			idx += sizeof(sz);
 
 			for (size_t o = 0; o < sizeof(crc); o++)
 				((unsigned char*)&crc)[o] = buf[idx + o];
+
 			idx += sizeof(crc);
 
-			pointer a = alloc.allocate(sz);
+			size_t allocSz = sz;
+			size_t origSz = sz;
+
+			auto iter = map.find(crc);
+			if (iter != map.end()) {
+				origSz = map[crc].size;
+
+				if (map[crc].size < allocSz)
+					alloc.deallocate(map[crc].ptr, map[crc].size);
+				else
+					allocSz = map[crc].size;
+			}
+
+			pointer a = alloc.allocate(allocSz);
+
+			if (!a) {
+				idx += sz;
+				continue;
+			}
 
 			for (size_t o = 0; o < sz; o++)
 			    a[o] = buf[idx++];
 
-			map[crc] = MapEntry(a, sz);
+			map[crc] = MapEntry(a, origSz);
 		}
 
 		reloadCount++;
