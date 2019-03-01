@@ -121,6 +121,9 @@ int Threading::EndThreads()
 
 void Threading::FinishQueue(bool executeJobs)
 {
+	if (!threads)
+		return;
+
 	MTR_BEGIN("workers", "finish_queue");
 
 	if (executeJobs) {
