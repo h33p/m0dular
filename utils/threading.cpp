@@ -102,8 +102,8 @@ int Threading::EndThreads()
 
 	for (size_t i = 0; i < numThreads; i++) {
 #if defined(__linux__) || defined(__APPLE__)
-		void* ret = nullptr;
-		pthread_join(*(pthread_t*)threads[i].handle, &ret);
+		void* ret2 = nullptr;
+		pthread_join(*(pthread_t*)threads[i].handle, &ret2);
 #else
 		ResumeThread(*(HANDLE*)threads[i].handle);
 		if (WaitForSingleObject(*(HANDLE*)threads[i].handle, 100) == WAIT_TIMEOUT && threads[i].isRunning)
@@ -177,9 +177,9 @@ void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 thread_t Threading::StartThread(threadFn start, void* arg, bool detached, thread_t* thread)
 {
 #ifdef _WIN32
-	CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)start, arg, 0, thread);
+	CreateThread(nullptr, nullptr, (LPTHREAD_START_ROUTINE)start, arg, 0, thread);
 #else
-	pthread_attr_t* attr = NULL;
+	pthread_attr_t* attr = nullptr;
 	pthread_attr_t tAttr;
 	if (detached) {
 		pthread_attr_init(&tAttr);

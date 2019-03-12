@@ -110,7 +110,7 @@ class PackedHeapL
 			return ret;
 		}
 		buf.resize(buf.size() + 1);
-		return buf.size();
+		return (idx_t)buf.size();
 	}
 
 	void Free(idx_t idx)
@@ -142,7 +142,7 @@ class PackedHeapL
 
 	void Free(T* ptr)
 	{
-		idx_t idx = ptr - &buf[0];
+		idx_t idx = (idx_t)(ptr - &buf[0]);
 		if (++idx < buf.size())
 			Free(idx);
 	}
@@ -158,7 +158,7 @@ class PackedHeapL
 		return buf[idx - 1];
 	}
 
-    constexpr const auto operator+(idx_t idx) const
+    constexpr auto operator+(idx_t idx) const
 	{
 		return PackedPtr<T, decltype(*this)>(*this, idx);
 	}
@@ -277,7 +277,7 @@ class PackedHeap : protected PackedAllocator
 	{
 		idx_t idx = 0;
 		while (idx < limit) {
-			MetaData* meta = (MetaData*)&prevBuf[idx];
+			MetaData* meta = (MetaData*)(uintptr_t)&prevBuf[idx];
 
 			if ((unsigned char)meta->used == HOLE_START) {
 				idx_t holeStart = idx;
@@ -302,35 +302,35 @@ class PackedHeap : protected PackedAllocator
 		memcpy(buf + start, prevBuf + start, end - start);
 	}
 
-	static void HoleNull(char* buf, char* prevBuf, idx_t start, idx_t end) {}
+	static void HoleNull([[maybe_unused]] char* buf, [[maybe_unused]] char* prevBuf, [[maybe_unused]] idx_t start, [[maybe_unused]] idx_t end) {}
 
 	static void MoveChunk(char* buf, char* prevBuf, idx_t idx, MetaData* meta)
 	{
-		*(MetaData*)&buf[idx] = *meta;
-		*((MetaData*)&buf[idx])->WalkUp() = *meta->WalkUp();
+		*(MetaData*)(uintptr_t)&buf[idx] = *meta;
+		*((MetaData*)(uintptr_t)&buf[idx])->WalkUp() = *meta->WalkUp();
 
 		if ((unsigned char)meta->used == USED_REGION) {
 			size_t cnt = meta->size / sizeof(T);
 			for (size_t i = 0; i < cnt; i++) {
-				new(buf + idx + sizeof(MetaData) + i * sizeof(T)) T(*(T*)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)]);
-				((T*)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)])->~T();
+				new(buf + idx + sizeof(MetaData) + i * sizeof(T)) T(*(T*)(uintptr_t)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)]);
+				((T*)(uintptr_t)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)])->~T();
 			}
 		}
 	}
 
 	static void ConstructChunk(char* buf, char* prevBuf, idx_t idx, MetaData* meta)
 	{
-		*(MetaData*)&buf[idx] = *meta;
-		*((MetaData*)&buf[idx])->WalkUp() = *meta->WalkUp();
+		*(MetaData*)(uintptr_t)&buf[idx] = *meta;
+		*((MetaData*)(uintptr_t)&buf[idx])->WalkUp() = *meta->WalkUp();
 
 		if ((unsigned char)meta->used == USED_REGION) {
 			size_t cnt = meta->size / sizeof(T);
 			for (size_t i = 0; i < cnt; i++)
-				new(buf + idx + sizeof(MetaData) + i * sizeof(T)) T(*(T*)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)]);
+				new(buf + idx + sizeof(MetaData) + i * sizeof(T)) T(*(T*)(uintptr_t)&prevBuf[idx + sizeof(MetaData) + i * sizeof(T)]);
 		}
 	}
 
-	static void DestructChunk(char* buf, char* prevBuf, idx_t idx, MetaData* meta)
+	static void DestructChunk([[maybe_unused]] char* buf, char* prevBuf, idx_t idx, MetaData* meta)
 	{
 		if ((unsigned char)meta->used == USED_REGION) {
 			size_t cnt = meta->size / sizeof(T);

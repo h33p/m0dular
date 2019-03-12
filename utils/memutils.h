@@ -7,43 +7,45 @@
 
 //External programs might want to use custom RPM/WPM functions
 #ifndef MEMUTILS_CUSTOM_RW
+inline void ReadMem(void* dest, void* source, size_t sz)
+{
+	memcpy(dest, source, sz);
+}
+
+inline void WriteMem(void* dest, void* source, size_t sz)
+{
+	memcpy(dest, source, sz);
+}
+#else
+void ReadMem(void* dest, void* source, size_t sz);
+void WriteMem(void* dest, void* source, size_t sz);
+#endif
+
 template<typename T, typename N>
 inline T Read(N addr)
 {
-	return *(T*)addr;
+	T ret;
+	ReadMem(&ret, (void*)addr, sizeof(T));
+	return ret;
 }
 
 template<typename T, typename N>
 inline void ReadArr(N addr, T* arr, size_t count)
 {
-	memcpy((void*)arr, *(void**)addr, sizeof(T) * count);
+	ReadMem((void*)arr, (void*)addr, sizeof(T) * count);
 }
 
 template<typename T, typename N>
 inline void Write(N addr, T value)
 {
-	return *(T*)addr = value;
+	WriteMem((void*)addr, &value, sizeof(T));
 }
 
 template<typename T, typename N>
 inline void WriteArr(N addr, T* arr, size_t count)
 {
-	memcpy((void*)addr, (void*)arr, sizeof(T) * count);
+	WriteMem((void*)addr, (void*)arr, sizeof(T) * count);
 }
-
-#else
-template<typename T, typename N>
-T Read(N addr);
-
-template<typename T, typename N>
-void ReadArr(N addr, T* arr, size_t count);
-
-template<typename T, typename N>
-T Write(N addr, T value);
-
-template<typename T, typename N>
-void WriteArr(N addr, T* arr, size_t count);
-#endif
 
 inline uintptr_t GetAbsoluteAddress(uintptr_t addr, intptr_t offset, intptr_t instructionSize)
 {
