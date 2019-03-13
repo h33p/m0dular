@@ -210,7 +210,7 @@ constexpr T NormalizeInRange(T result, T start, T end)
 
 //This should never be called in the first place, but it is required for the compile to take place
 template<typename T>
-constexpr T GetElementAt(size_t id)
+constexpr T GetElementAt([[maybe_unused]] size_t id)
 {
 	return T();
 }
@@ -259,8 +259,8 @@ constexpr T ConstCos(T val)
 	return ConstSin(val + M_PI / 2);
 }
 
-constexpr float RAD2DEG = 180.0 / M_PI;
-constexpr float DEG2RAD = M_PI / 180.0;
+constexpr float RAD2DEG = (float)(180.0 / M_PI);
+constexpr float DEG2RAD = (float)(M_PI / 180.0);
 
 #include "vector.h"
 
