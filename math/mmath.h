@@ -210,7 +210,7 @@ constexpr T NormalizeInRange(T result, T start, T end)
 
 //This should never be called in the first place, but it is required for the compile to take place
 template<typename T>
-constexpr T GetElementAt(size_t id)
+constexpr T GetElementAt([[maybe_unused]] size_t id)
 {
 	return T();
 }

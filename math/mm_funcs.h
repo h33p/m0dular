@@ -10,6 +10,7 @@ struct m_
 	};
 };
 
+[[noreturn]]
 static inline void throwfunc()
 {
 	throw;

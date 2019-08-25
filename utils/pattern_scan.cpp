@@ -38,7 +38,7 @@ uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_
 
 static void ParsePattern(const char* pattern, short*& patternBytes, size_t& length, std::vector<pOperation>& operations)
 {
-	char* p = (char*)pattern-1;
+	char* p = (char*)(uintptr_t)pattern-1;
 	bool inRelDeref = false;
 	[[maybe_unused]] bool derefDone = false;
 	int relIdx = 0;
@@ -121,7 +121,7 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 				p--;
 
 		} else {
-			patternBytes[idx++] = strtoul(p, &p, 16);
+			patternBytes[idx++] = (uint8_t)strtoul(p, &p, 16);
 			if (*p != ' ')
 				p--;
 		}

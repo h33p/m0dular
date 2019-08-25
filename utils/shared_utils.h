@@ -30,7 +30,7 @@ constexpr auto& RemovePtr(T& arg)
 }
 
 template<typename T>
-constexpr bool IsPointer(T& arg)
+constexpr bool IsPointer([[maybe_unused]] T& arg)
 {
 	return is_pointer<T>::value;
 }

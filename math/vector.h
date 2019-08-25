@@ -78,6 +78,30 @@ template<size_t X, size_t Y>
 struct matrix;
 
 template<typename T, size_t N>
+struct vecb_accessor
+{
+	T x, y, z, w;
+};
+
+template<typename T>
+struct vecb_accessor<T, 1>
+{
+	T x;
+};
+
+template<typename T>
+struct vecb_accessor<T, 2>
+{
+	T x, y;
+};
+
+template<typename T>
+struct vecb_accessor<T, 3>
+{
+	T x, y, z;
+};
+
+template<typename T, size_t N>
 struct vecb
 {
 	T v[N];
@@ -108,6 +132,16 @@ struct vecb
 	constexpr const T& operator[](size_t idx) const
 	{
 		return v[idx];
+	}
+
+	inline vecb_accessor<T, N>* operator->()
+	{
+		return (vecb_accessor<T, N>*)v;
+	}
+
+	inline const vecb_accessor<T, N>* operator->() const
+	{
+		return (const vecb_accessor<T, N>*)v;
 	}
 
 	template<size_t B>
