@@ -9,6 +9,18 @@
 template <typename T, size_t C>
 struct HistoryList
 {
+
+	//id 0 is the current item, and higher up go previous items
+	inline T& GetLastItem(size_t id)
+	{
+		return list[(counter - id) % C];
+	}
+
+	inline T& operator[](size_t id)
+	{
+		return GetLastItem(id);
+	}
+
 	HistoryList()
 	{
 		counter = 0;
@@ -16,7 +28,7 @@ struct HistoryList
 
 	~HistoryList()
 	{
-	    for (size_t i = 0; i < Count(); i++)
+		for (size_t i = 0; i < Count(); i++)
 			operator[](i).~T();
 	}
 
@@ -45,17 +57,6 @@ struct HistoryList
 	auto& GetItem(size_t id)
 	{
 		return list[id % C];
-	}
-
-	//id 0 is the current item, and higher up go previous items
-	inline auto& GetLastItem(size_t id)
-	{
-		return list[(counter - id) % C];
-	}
-
-	inline auto& operator[](size_t id)
-	{
-		return GetLastItem(id);
 	}
 
 	size_t Count()

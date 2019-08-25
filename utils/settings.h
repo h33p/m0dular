@@ -52,12 +52,12 @@ class SettingsGroupBase
 	{
 		//Possibly throw an exception
 		if (buf[idx++] != HEADER_MAGIC)
-		    return ~0;
+			return ~0;
 
 		size_type bsz = buf.size();
 
 		for (size_t i = 0; i < sizeof(size_type); i++)
-		    ((unsigned char*)&bsz)[i] = buf[idx++];
+			((unsigned char*)&bsz)[i] = buf[idx++];
 
 		while (idx < bsz) {
 			size_type sz = 0;
@@ -94,7 +94,7 @@ class SettingsGroupBase
 			}
 
 			for (size_t o = 0; o < sz; o++)
-			    a[o] = buf[idx++];
+				a[o] = buf[idx++];
 
 			map[crc] = MapEntry(a, origSz);
 		}

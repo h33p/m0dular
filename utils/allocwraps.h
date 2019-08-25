@@ -24,11 +24,11 @@ struct offset_pointer_t
 {
 	T* ptr;
 
-    using difference_type = ptrdiff_t;
-    using value_type = T;
-    using pointer = T*;
-    using reference = typename GetReference<T>::type;
-    using iterator_category = std::random_access_iterator_tag;
+	using difference_type = ptrdiff_t;
+	using value_type = T;
+	using pointer = T*;
+	using reference = typename GetReference<T>::type;
+	using iterator_category = std::random_access_iterator_tag;
 
 	constexpr offset_pointer_t()
 		: ptr((T*)~0ul)
@@ -190,7 +190,7 @@ class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 	template<typename F>
 	struct pointer_t : offset_pointer_t<F, BASE>
 	{
-	    typedef offset_pointer_t<F, BASE> base_class;
+		typedef offset_pointer_t<F, BASE> base_class;
 		typedef typename base_class::difference_type difference_type;
 		typedef typename base_class::value_type value_type;
 		typedef typename base_class::pointer pointer;
@@ -248,7 +248,7 @@ class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 		template<typename G>
 		constexpr pointer_t operator+(G i) const
 		{
-		    return base_class::template operator+(i);
+			return base_class::template operator+(i);
 		}
 
 		template<typename G>
@@ -259,13 +259,13 @@ class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 
 		constexpr pointer_t& operator++()
 		{
-		    base_class::operator++();
+			base_class::operator++();
 			return *this;
 		}
 
 		constexpr pointer_t& operator--()
 		{
-		    base_class::operator--();
+			base_class::operator--();
 			return *this;
 		}
 
@@ -300,7 +300,7 @@ class generic_free_list_allocator : FreeListAllocator<BASE, REALLOCATABLE>
 	template<typename T>
 	inline auto allocate(size_type size)
 	{
-	    auto ptr = this->Allocate(sizeof(T) * size, std::alignment_of<T>::value);
+		auto ptr = this->Allocate(sizeof(T) * size, std::alignment_of<T>::value);
 		return pointer_t<T>((T*)&*ptr);
 	}
 
@@ -366,7 +366,7 @@ class free_list_allocator : public generic_free_list_allocator<BASE, REALLOCATAB
 	template<typename Other>
 	struct rebind
 	{
-	    using other = free_list_allocator<Other, BASE, REALLOCATABLE, SIZE, PLACEMENT_POLICY>;
+		using other = free_list_allocator<Other, BASE, REALLOCATABLE, SIZE, PLACEMENT_POLICY>;
 	};
 };
 

@@ -11,7 +11,8 @@
 															\
 	friend constexpr auto operator OP(type v, const T& ov)	\
 	{														\
-		for (size_t o = 0; o < N; o++)						\
+		size_t o = 0;										\
+		for (o = 0; o < N; o++)								\
 			v.v[o] = v.v[o] OP ov;							\
 		return v;											\
 	}														\
@@ -70,7 +71,7 @@
 		return v;										\
 	}													\
 														\
-    constexpr auto& operator OP##=(const type& ov)		\
+	constexpr auto& operator OP##=(const type& ov)		\
 	{													\
 		for (size_t i = 0; i < X; i++)					\
 			for (size_t o = 0; o < Y; o++)				\
@@ -141,7 +142,7 @@
 		return v;										\
 	}													\
 														\
-    constexpr auto& operator OP##=(const type& ov)		\
+	constexpr auto& operator OP##=(const type& ov)		\
 	{													\
 		for (size_t i = 0; i < Y; i++)					\
 			for (size_t o = 0; o < X; o++)				\

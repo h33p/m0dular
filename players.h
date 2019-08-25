@@ -149,7 +149,7 @@ struct Players
 
 	Players(int cnt)
 	{
-	    Allocate(cnt);
+		Allocate(cnt);
 	}
 
 	Players()

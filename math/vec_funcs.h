@@ -8,7 +8,7 @@ template<typename F, typename = typename std::enable_if<AllArithmetic<F>::value>
 constexpr VEC_TYPE(F arg) : v()
 {
 	for (size_t i = 0; i < N; i++)
-		v[i] = arg;
+		v[i] = (T)arg;
 }
 
 template<typename... F, typename = typename std::enable_if<AllArithmetic<F...>::value>::type>

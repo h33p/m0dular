@@ -361,7 +361,7 @@ class FreeListAllocator : public Allocator {
 
 			NodePtr lastNode = NodePtr(BASE + (uintptr_t)oldSize);
 			lastNode->data.blockSize = totalSize - oldSize;
-		    lastNode->next = nullptr;
+			lastNode->next = nullptr;
 			freeList.insert(itPrev, lastNode);
 			Coalescence(itPrev, lastNode);
 		}

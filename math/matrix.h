@@ -60,7 +60,7 @@ struct matrix
 	template <size_t X2, size_t Y2>
 	inline auto& operator*=(const matrix<X2, Y2>& ov)
 	{
-	    *this = *this * ov;
+		*this = *this * ov;
 		return *this;
 	}
 

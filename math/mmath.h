@@ -149,7 +149,7 @@ constexpr size_t Clz(size_t inp)
 #else
 	for (size_t i = 0; (1 << i) < sizeof(size_t) * 8; i++)
 		inp |= inp >> (1 << i);
-    return sizeof(inp) * 8 - PopCnt(inp);
+	return sizeof(inp) * 8 - PopCnt(inp);
 #endif
 }
 
@@ -164,9 +164,9 @@ constexpr size_t AlignUp(size_t inp)
 template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* p = nullptr>
 constexpr T Modulo(const T x, const T y)
 {
-    return (x < T() ? T(-1) : T(1)) * (
+	return (x < T() ? T(-1) : T(1)) * (
 		(x < T() ? -x : x) -
-	    (long long)((x / y < T() ? -x / y : x / y)) * (y < T() ? -y : y));
+		(long long)((x / y < T() ? -x / y : x / y)) * (y < T() ? -y : y));
 }
 
 // For non-floating point types
@@ -177,7 +177,7 @@ using TypeToCast = typename std::conditional<std::is_floating_point<T>::value, i
 template<typename T, typename std::enable_if<!std::is_floating_point<T>::value>::type* p = nullptr>
 constexpr T Modulo(const T x, const T y)
 {
-    return (TypeToCast<T>)(x) % (TypeToCast<T>)(y);
+	return (TypeToCast<T>)(x) % (TypeToCast<T>)(y);
 }
 
 template<typename T>
@@ -259,8 +259,8 @@ constexpr T ConstCos(T val)
 	return ConstSin(val + M_PI / 2);
 }
 
-constexpr float RAD2DEG = 180.0 / M_PI;
-constexpr float DEG2RAD = M_PI / 180.0;
+constexpr float RAD2DEG = (float)(180.0 / M_PI);
+constexpr float DEG2RAD = (float)(M_PI / 180.0);
 
 #include "vector.h"
 

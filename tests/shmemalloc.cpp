@@ -86,7 +86,7 @@ bool MapSharedMemory(void*& addr)
 	printf("OPEN FILE %p\n", mapFile);
 
 	if (!(void*)mapFile) {
-	    mapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, msz, "shm_test");
+		mapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, msz, "shm_test");
 		firstTime = true;
 	}
 
@@ -109,7 +109,7 @@ bool MapSharedMemory(void*& addr)
 	//firstTime = true;
 
 	if (fd != -1 && ftruncate(fd, msz) != -2)
-	    addr = mmap(nullptr, msz, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+		addr = mmap(nullptr, msz, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 
 	if (addr == (void*)-1)
 		addr = nullptr;

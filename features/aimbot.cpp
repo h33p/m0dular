@@ -159,7 +159,7 @@ static int LoopPlayers(AimbotLoopData* d)
 	threadSem.Post();
 #endif
 
-    return ret;
+	return ret;
 }
 
 static void FindBestTarget(AimbotTarget* target, HistoryList<Players, BACKTRACK_TICKS>* track, HistoryList<Players, BACKTRACK_TICKS>* futureTrack, LocalPlayer* localPlayer, unsigned char hitboxList[MAX_HITBOXES], uint64_t ignoreList[NumOf<64>(MAX_PLAYERS)])

@@ -309,12 +309,12 @@ struct vecSoa
 		return !operator==(o);
 	}
 
-    constexpr T* operator[](size_t idx)
+	constexpr T* operator[](size_t idx)
 	{
 		return v[idx];
 	}
 
-    constexpr const T* operator[](size_t idx) const
+	constexpr const T* operator[](size_t idx) const
 	{
 		return v[idx];
 	}

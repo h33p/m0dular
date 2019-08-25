@@ -49,7 +49,7 @@ template<size_t Y>
 unsigned int CapsuleCollider::IntersectSOA(vec3soa<float, Y>& __restrict a, vec3soa<float, Y>& __restrict b, vec3soa<float, Y>* __restrict out)
 {
 	unsigned int flags = 0;
-    svec3<Y> soaStart, soaEnd;
+	svec3<Y> soaStart, soaEnd;
 	soaStart = start;
 	soaEnd = end;
 	float radiusSqr = radius * radius;

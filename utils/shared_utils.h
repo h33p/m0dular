@@ -68,6 +68,6 @@ struct AllArithmetic<first> : std::is_arithmetic<first> {};
 template<typename T>
 constexpr T* AlignUp(T* ptr, std::size_t align = std::alignment_of<T>::value)
 {
-    return (T*)(((std::size_t)ptr + align - 1) & ~(align - 1));
+	return (T*)(((std::size_t)ptr + align - 1) & ~(align - 1));
 }
 #endif

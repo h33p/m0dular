@@ -13,7 +13,7 @@ constexpr SOA_TYPE(F arg) : v()
 {
 	for (size_t i = 0; i < Xt; i++)
 		for (size_t o = 0; o < Yt; o++)
-			v[i][o] = arg;
+			v[i][o] = (T)arg;
 }
 
 template<typename... F, typename = typename std::enable_if<AllArithmetic<F...>::value>::type>
@@ -140,7 +140,7 @@ inline void Dot(const F& ov, T val[Y2]) const
 template <size_t D>
 inline void Dot(const SOA_TYPE& ov, T val[Y]) const
 {
-    Dot<SOA_TYPE, D, Y>(ov, val);
+	Dot<SOA_TYPE, D, Y>(ov, val);
 }
 
 template <size_t D>

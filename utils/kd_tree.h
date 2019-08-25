@@ -62,7 +62,7 @@ struct KDTree
 
 	constexpr pointer Find(const T& entry)
 	{
-	    return Find(rootNode, entry, 0);
+		return Find(rootNode, entry, 0);
 	}
 
 	constexpr void DeleteNode(const pointer& ref)
@@ -132,8 +132,8 @@ struct KDTree
 		if (!root) {
 			root = Allocate();
 			*root = TreeNode();
-		    treeSize++;
-		    root->value = entry;
+			treeSize++;
+			root->value = entry;
 			if (out)
 				*out = root;
 			return root;
@@ -216,9 +216,9 @@ struct KDTree
 		}
 
 		if (entry[d] < root->value[d])
-		    root->left = DeleteNode((pointer)root->left, entry, depth + 1);
+			root->left = DeleteNode((pointer)root->left, entry, depth + 1);
 		else
-		    root->right = DeleteNode((pointer)root->right, entry, depth + 1);
+			root->right = DeleteNode((pointer)root->right, entry, depth + 1);
 
 		return root;
 	}

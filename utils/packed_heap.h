@@ -101,7 +101,7 @@ class PackedHeapL
 	idx_t Alloc()
 	{
 		if (freeRegions.size()) {
-		    auto end = freeRegions.rbegin();
+			auto end = freeRegions.rbegin();
 			idx_t ret = end->end;
 			if (end->start == end->end)
 				freeRegions.pop_back();
@@ -158,7 +158,7 @@ class PackedHeapL
 		return buf[idx - 1];
 	}
 
-    constexpr const auto operator+(idx_t idx) const
+	constexpr const auto operator+(idx_t idx) const
 	{
 		return PackedPtr<T, decltype(*this)>(*this, idx);
 	}
@@ -168,7 +168,7 @@ class PackedHeapL
 		return buf[idx - 1];
 	}
 
-    constexpr auto operator+(idx_t idx)
+	constexpr auto operator+(idx_t idx)
 	{
 		return PackedPtr<T, decltype(*this)>(*this, idx);
 	}
@@ -188,7 +188,7 @@ class PackedAllocator
 
 	struct MetaData
 	{
-	    uint8_t used;
+		uint8_t used;
 		idx_t size;
 
 		inline bool operator==(const MetaData& o) const
@@ -272,7 +272,10 @@ class PackedHeap : protected PackedAllocator
 {
   private:
 
-	template<auto& HoleHandler, auto& ChunkHandler>
+	typedef void(*HoleFn)(char*, char*, idx_t, idx_t);
+	typedef void(*ChunkFn)(char*, char*, idx_t, MetaData*);
+
+	template<HoleFn HoleHandler, ChunkFn ChunkHandler>
 	void WalkBuffer(char* prevBuf, idx_t limit)
 	{
 		idx_t idx = 0;

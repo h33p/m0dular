@@ -99,14 +99,14 @@ int main()
 			allocedPtrs[i] = allocAlign.New();
 
 		for (; i < (TEST_SIZE / 4) * 2; i++) {
-		    allocAlign.Delete(allocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			allocAlign.Delete(allocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 			allocedPtrs[i] = allocAlign.New();
 			if (!allocAlign[allocedPtrs[i]].TestAlignment())
 				return 1;
 		}
 
 		for (; i < (TEST_SIZE / 4) * 3; i++) {
-		    allocAlign.Delete(allocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			allocAlign.Delete(allocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 			allocedPtrs[i] = allocAlign.New();
 			if (!allocAlign[allocedPtrs[i]].TestAlignment())
 				return 1;
@@ -275,17 +275,17 @@ int main()
 		}
 
 		for (; i < (TEST_SIZE / 4) * 3; i++) {
-		    free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 			mallocedPtrs[i] = (TempStruct*)malloc(sizeof(TempStruct) * randTable[i % RTABLE_SIZE]);
 		}
 
 		for (; i < TEST_SIZE; i++) {
-		    free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 			mallocedPtrs[i] = (TempStruct*)malloc(sizeof(TempStruct) * randTable[i % RTABLE_SIZE]);
 		}
 
 		for (; i < TEST_SIZE / 4 * 5; i++)
-		    free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 
 		auto t2 = Clock::now();
 
@@ -447,17 +447,17 @@ int main()
 		}
 
 		for (; i < (TEST_SIZE / 4) * 3; i++) {
-		    delete mallocedPtrs[freeOrder[i - TEST_SIZE / 4]];
+			delete mallocedPtrs[freeOrder[i - TEST_SIZE / 4]];
 			mallocedPtrs[i] = new TempStruct();
 		}
 
 		for (; i < TEST_SIZE; i++) {
-		    delete mallocedPtrs[freeOrder[i - TEST_SIZE / 4]];
+			delete mallocedPtrs[freeOrder[i - TEST_SIZE / 4]];
 			mallocedPtrs[i] = new TempStruct();
 		}
 
 		for (; i < TEST_SIZE / 4 * 5; i++)
-		    delete mallocedPtrs[freeOrder[i - TEST_SIZE / 4]];
+			delete mallocedPtrs[freeOrder[i - TEST_SIZE / 4]];
 
 		auto t2 = Clock::now();
 
@@ -488,17 +488,17 @@ int main()
 		}
 
 		for (; i < (TEST_SIZE / 4) * 3; i++) {
-		    free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 			mallocedPtrs[i] = (TempStruct*)malloc(sizeof(TempStruct));
 		}
 
 		for (; i < TEST_SIZE; i++) {
-		    free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 			mallocedPtrs[i] = (TempStruct*)malloc(sizeof(TempStruct));
 		}
 
 		for (; i < TEST_SIZE / 4 * 5; i++)
-		    free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
+			free(mallocedPtrs[freeOrder[i - TEST_SIZE / 4]]);
 
 		auto t2 = Clock::now();
 

@@ -91,9 +91,9 @@ int main()
 				overrideSettings = &overrideBSettings;
 
 			if (i % 2000 == 0 && groupSettings != &groupASettings)
-			    groupSettings = &groupASettings;
+				groupSettings = &groupASettings;
 			else
-			    groupSettings = &groupBSettings;
+				groupSettings = &groupBSettings;
 
 		}
 		auto t2 = Clock::now();
