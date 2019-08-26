@@ -11,6 +11,14 @@ constexpr VEC_TYPE(F arg) : v()
 		v[i] = (T)arg;
 }
 
+
+template<typename F, size_t SZ, typename = typename std::enable_if<AllArithmetic<F>::value>::type>
+constexpr VEC_TYPE(const F (&args)[SZ]) : v()
+{
+	for (size_t i = 0; i < N; i++)
+		v[i] = args[i % SZ];
+}
+
 template<typename... F, typename = typename std::enable_if<AllArithmetic<F...>::value>::type>
 constexpr VEC_TYPE(F... args) : v()
 {

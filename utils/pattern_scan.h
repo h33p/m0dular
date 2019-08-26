@@ -14,11 +14,14 @@
 
   In short, the scanner does not only find the pattern, it also allows to get the address of the exact element we want in memory. Here is the full list of actions we can take:
   1) Dereference native size pointer with *
-  2) Dereference 32-bit size pointer with ^
-  3) Offset the resulting address to the wanted place with @
-  4) Instruct the first dereference to be IP-relative with []
-  5) After each dereference, an offset can be specified with +NUM or -NUM, a space is needed if the next non-offset character is a part of exact pattern match
-  6) Manual relative dereference is done with :OFF,SIZE
+  2) Read 8-bit size value with $
+  3) Read 16-bit size value with %
+  4) Read 32-bit size value with ^
+  5) Read 64-bit size value with &
+  6) Offset the resulting address to the wanted place with @
+  7) Instruct the first dereference to be IP-relative with []
+  8) After each dereference, an offset can be specified with +NUM or -NUM, a space is needed if the next non-offset character is a part of exact pattern match
+  9) Manual relative dereference is done with :OFF,SIZE
 */
 
 namespace PatternScan

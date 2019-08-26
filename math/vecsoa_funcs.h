@@ -435,7 +435,7 @@ constexpr auto GetColAsVecb(int col)
 
 constexpr auto GetColAsVecp(int col)
 {
-	return *(vecp<T, Y>*)v[col];
+	return vecp<T, Y>(v[col]);
 }
 
 

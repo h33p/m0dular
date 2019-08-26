@@ -20,14 +20,25 @@ struct pOperation
 	uintptr_t RunOp(uintptr_t addr)
 	{
 		switch(op) {
-		  case 0:
-			  return Read<uintptr_t>(addr + offset);
 		  case 1:
 			  return addr + offset;
-		  case 2:
-			  return GetAbsoluteAddress(addr, offset, v1);
-		  case 3:
-			  return Read<unsigned int>(addr + offset);
+		  case 11:
+			  return Read<uint8_t>(addr + offset);
+		  case 12:
+			  return Read<uint16_t>(addr + offset);
+		  case 14:
+			  return Read<uint32_t>(addr + offset);
+		  case 18:
+			  return Read<uint64_t>(addr + offset);
+		  case 21:
+			  return GetAbsoluteAddress<int8_t>(addr, offset, v1);
+		  case 22:
+			  return GetAbsoluteAddress<int16_t>(addr, offset, v1);
+		  case 24:
+		  case 28:
+			  return GetAbsoluteAddress<int32_t>(addr, offset, v1);
+		  default:
+			  printf("INVALID OPPPP!\n");
 		}
 		return addr;
 	}
@@ -35,6 +46,14 @@ struct pOperation
 };
 
 uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_t* data, uintptr_t* mask);
+
+static constexpr size_t readSizes[256] = {
+	['$'] = 1,
+	['%'] = 2,
+	['^'] = 4,
+	['&'] = 8,
+	['*'] = sizeof(uintptr_t)
+};
 
 static void ParsePattern(const char* pattern, short*& patternBytes, size_t& length, std::vector<pOperation>& operations)
 {
@@ -78,46 +97,45 @@ static void ParsePattern(const char* pattern, short*& patternBytes, size_t& leng
 
 			pOperation& op = operations.at(relIdx);
 
-			op.op = 2;
 			op.offset = initDerefIdx - relStartIdx;
 			op.v1 = idx - relStartIdx;
-		} else if (*p == '*' || *p == '^') {
+		} else if (readSizes[(int)*p] != 0) {
 			assert(!derefDone);
 			derefDone = true;
 
 			initDerefIdx = idx;
 
 			if (!inRelDeref)
-				operations.emplace_back(pOperation((*p == '*') ? 0 : 3, idx));
+				operations.emplace_back(pOperation(10 + readSizes[(int)*p], idx));
+			else
+				operations.at(relIdx).op = 20 + readSizes[(int)*p];
+
 			p++;
 
-			while (*p == '+' || *p == '-' || *p == '*' || *p == '^' || *p == ':') {
-				if (*p == '*')
-					operations.emplace_back(pOperation(*p++ == '*' ? 0 : 1));
-				else if (*p == '^')
-					operations.emplace_back(pOperation(*p++ == '^' ? 3 : 1));
+			while (*p == '+' || *p == '-' || readSizes[(int)*p] || *p == ':') {
+				if (readSizes[(int)*p])
+					operations.emplace_back(pOperation(10 + readSizes[(int)*p++]));
 				else if (*p == ':') {
 					pOperation op = pOperation();
 					p++;
 					op.offset = strtol(p, &p, 10);
 					p++;
 					op.v1 = strtol(p, &p, 10);
-					op.op = 2;
-					p--;
+					op.op = 20 + sizeof(uintptr_t);
 					operations.emplace_back(op);
 				} else {
 					pOperation op = pOperation();
 					if (*p == '+' || *p == '-')
 						op.offset = strtol(p, &p, 10);
 					//Compress the offset operation into a dereference
-					op.op = (*p == '*') ? 0 : ((*p == '^') ? 3 : 1);
-					if (*p == '*' || *p == '^')
+					op.op = readSizes[(int)*p] ? 10 + readSizes[(int)*p] : 1;
+					if (readSizes[(int)*p])
 						p++;
 					operations.emplace_back(op);
 				}
 			}
 
-			if (*p == '?')
+			if (*p != ' ')
 				p--;
 
 		} else {

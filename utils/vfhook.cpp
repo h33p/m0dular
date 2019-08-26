@@ -34,6 +34,9 @@ VFuncHook::VFuncHook(void* base, bool overrideMode, int minSize)
 		*classBase = curVTable;
 }
 
+//We need to disable ASAN for this function, as classBase might be pointing to freed area.
+//This is completely intentional.
+[[gnu::no_sanitize_address]]
 VFuncHook::~VFuncHook()
 {
 	if (*classBase == curVTable)

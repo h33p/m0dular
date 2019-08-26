@@ -47,9 +47,10 @@ inline void WriteArr(N addr, T* arr, size_t count)
 	WriteMem((void*)addr, (void*)arr, sizeof(T) * count);
 }
 
+template<typename T = int32_t>
 inline uintptr_t GetAbsoluteAddress(uintptr_t addr, intptr_t offset, intptr_t instructionSize)
 {
-	return addr + Read<int>(addr + offset) + instructionSize;
+	return addr + Read<T>(addr + offset) + instructionSize;
 }
 
 template<typename T, size_t idx, typename N>
