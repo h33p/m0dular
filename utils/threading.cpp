@@ -177,7 +177,7 @@ void Threading::UnbindThread(LList<struct Job>* jobsQueue)
 thread_t Threading::StartThread(threadFn start, void* arg, bool detached, thread_t* thread)
 {
 #ifdef _WIN32
-	CreateThread(nullptr, nullptr, (LPTHREAD_START_ROUTINE)start, arg, 0, thread);
+	CreateThread(nullptr, (SIZE_T)nullptr, (LPTHREAD_START_ROUTINE)start, arg, 0, thread);
 #else
 	pthread_attr_t* attr = nullptr;
 	pthread_attr_t tAttr;

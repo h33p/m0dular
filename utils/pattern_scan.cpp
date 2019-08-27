@@ -47,12 +47,12 @@ struct pOperation
 
 uintptr_t ScanPattern(uintptr_t start, uintptr_t end, uintptr_t length, uintptr_t* data, uintptr_t* mask);
 
-static constexpr size_t readSizes[256] = {
-	['$'] = 1,
-	['%'] = 2,
-	['^'] = 4,
-	['&'] = 8,
-	['*'] = sizeof(uintptr_t)
+static std::map<char, size_t> readSizes = {
+	{'$', 1},
+	{'%', 2},
+	{'^', 4},
+	{'&', 8},
+	{'*', sizeof(uintptr_t)}
 };
 
 static void ParsePattern(const char* pattern, short*& patternBytes, size_t& length, std::vector<pOperation>& operations)
