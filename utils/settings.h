@@ -10,9 +10,16 @@
 #define OPTION(type, name, ...) Option<type, CCRC32(#name), __VA_ARGS__> name
 #define OPTIONDEF(name) decltype(name) name
 
+class SettingsGroupAccessorBase;
+
 template<typename Alloc = std::allocator<unsigned char>>
-class SettingsGroupBase
+class SettingsGroupAccessor_t;
+
+template<typename Alloc = std::allocator<unsigned char>>
+class SettingsGroup_t
 {
+	using accessor_t = typename SettingsGroupAccessor_t<typename Alloc>;
+	friend class accessor_t;
   public:
 
 	using pointer = typename Alloc::pointer;
@@ -36,16 +43,21 @@ class SettingsGroupBase
 			: ptr(), size() {}
 	};
 
-	SettingsGroupBase()
+	SettingsGroup_t()
 	{
 		reloadCount = 0;
 	}
 
-	SettingsGroupBase(const std::vector<unsigned char>& buf, size_t i = 0)
+	SettingsGroup_t(const std::vector<unsigned char>& buf, size_t i = 0)
 	{
 		reloadCount = 0;
 		Initialize(buf, i);
 		reloadCount = 0;
+	}
+
+	inline SettingsGroupAccessorBase* GenerateNewAccessor()
+	{
+		return new SettingsGroupAccessor_t<Alloc>(*this);
 	}
 
 	inline size_t Initialize(const std::vector<unsigned char>& buf, size_t idx = 0)
@@ -146,15 +158,20 @@ class SettingsGroupBase
 		return idx;
 	}
 
+	inline pointer ReserveOptionBase(crcs_t crc, const void* val, size_t sz)
+	{
+		if (map.find(crc) == map.end()) {
+			pointer idx = alloc.allocate(sz);
+			memcpy(&*idx, val, sz);
+			map[crc] = MapEntry(idx, sz);
+		}
+		return map[crc].ptr;
+	}
+
 	template<typename T>
 	inline pointer_t<T> ReserveOption(crcs_t crc, const T& val)
 	{
-		if (map.find(crc) == map.end()) {
-			pointer_t<T> idx = (pointer_t<T>)alloc.allocate(sizeof(T));
-			*idx = val;
-			map[crc] = MapEntry(idx, sizeof(T));
-		}
-		return (pointer_t<T>)map[crc].ptr;
+		return (pointer_t<T>)ReserveOptionBase(crc, &val, sizeof(T));
 	}
 
 	inline pointer TryGetAlloc(crcs_t crc)
@@ -213,7 +230,64 @@ class SettingsGroupBase
 	size_t reloadCount;
 };
 
-using SettingsGroup = SettingsGroupBase<std::allocator<unsigned char>>;
+using SettingsGroup = SettingsGroup_t<std::allocator<unsigned char>>;
+
+class SettingsGroupAccessorBase
+{
+public:
+
+	template<typename T>
+	inline T Get(crcs_t crc)
+	{
+		T val;
+		GetValue(crc, &val, sizeof(T));
+		return val;
+	}
+
+	template<typename T>
+	inline void Set(crcs_t crc, const T& val)
+	{
+		SetValue(crc, &val, sizeof(T));
+	}
+
+	virtual void GetValue(crcs_t crc, void* buf, size_t sz) = 0;
+	virtual void SetValue(crcs_t crc, const void* buf, size_t sz) = 0;
+	virtual bool IsAlloced(crcs_t crc) = 0;
+};
+
+template<typename Alloc>
+class SettingsGroupAccessor_t : public SettingsGroupAccessorBase
+{
+	using SG = typename SettingsGroup_t<Alloc>;
+	using sgpointer = typename SG::pointer;
+	SG& group;
+
+public:
+
+	SettingsGroupAccessor_t(SG& g)
+		: group(g) {}
+
+	virtual void SetValue(crcs_t crc, const void* buf, size_t sz) override
+	{
+		sgpointer ptr = group.ReserveOptionBase(crc, buf, sz);
+		memcpy(&*ptr, buf, sz);
+	}
+
+	virtual void GetValue(crcs_t crc, void* buf, size_t sz) override
+	{
+		sgpointer ptr = group.TryGetAlloc(crc);
+		if (!ptr) {
+			ptr = group.ReserveOptionBase(crc, buf, sz);
+			memset(&*ptr, 0, sz);
+		}
+		memcpy(buf, &*ptr, sz);
+	}
+
+	virtual bool IsAlloced(crcs_t crc) override
+	{
+		return !!group.TryGetAlloc(crc);
+	}
+};
 
 template<typename T, crcs_t CRC, auto& G>
 struct OptionDataRef
@@ -399,6 +473,8 @@ template<typename T, crcs_t CRC, auto&... Chain>
 struct Option : public SettingsChain<T, CRC, Chain...>
 {
 	typedef SettingsChain<T, CRC, Chain...> Container;
+	using value_type = T;
+	static constexpr crcs_t CRCVAL = CRC;
 
 	constexpr Option(const T& v)
 		: Container(v) {}
