@@ -18,8 +18,8 @@ class SettingsGroupAccessor_t;
 template<typename Alloc = std::allocator<unsigned char>>
 class SettingsGroup_t
 {
-	using accessor_t = typename SettingsGroupAccessor_t<typename Alloc>;
-	friend class accessor_t;
+	using accessor_t = SettingsGroupAccessor_t<Alloc>;
+	friend accessor_t;
   public:
 
 	using pointer = typename Alloc::pointer;
@@ -235,6 +235,7 @@ using SettingsGroup = SettingsGroup_t<std::allocator<unsigned char>>;
 class SettingsGroupAccessorBase
 {
 public:
+	virtual ~SettingsGroupAccessorBase() {}
 
 	template<typename T>
 	inline T Get(crcs_t crc)
@@ -258,7 +259,7 @@ public:
 template<typename Alloc>
 class SettingsGroupAccessor_t : public SettingsGroupAccessorBase
 {
-	using SG = typename SettingsGroup_t<Alloc>;
+	using SG = SettingsGroup_t<Alloc>;
 	using sgpointer = typename SG::pointer;
 	SG& group;
 
