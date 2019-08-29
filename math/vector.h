@@ -104,6 +104,8 @@ struct vecb_accessor<T, 3>
 template<typename T, size_t N>
 struct vecb
 {
+	using value_type = T;
+	static constexpr size_t Yt = N;
 	T v[N];
 
 	DEFINE_VEC_OPS(vecb);
@@ -169,6 +171,9 @@ struct vecb
 template<typename T, size_t N>
 struct vecp
 {
+	using value_type = T;
+	static constexpr size_t Yt = N;
+
 	union {
 		struct {
 			float x, y, z, w;
@@ -238,6 +243,7 @@ struct vecp
 template<typename T, size_t Y>
 struct vec3soa
 {
+	using value_type = T;
 	static constexpr size_t X = 3;
 	static constexpr size_t Xt = X;
 	static constexpr size_t Yt = Y;
@@ -315,6 +321,7 @@ struct vec3soa
 template<typename T, size_t X, size_t Y>
 struct vecSoa
 {
+	using value_type = T;
 	static constexpr size_t Xt = X;
 	static constexpr size_t Yt = Y;
 	union
