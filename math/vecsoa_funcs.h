@@ -347,13 +347,13 @@ constexpr auto& AddRow(int row, const vecp<T, X>& vec)
 
 constexpr auto& AddRow(int row, T val)
 {
-	for (int i = 0; i < X; i++)
+	for (size_t i = 0; i < X; i++)
 		v[i][row] += val;
 }
 
 constexpr auto& AddRow(int row, const T* val)
 {
-	for (int i = 0; i < X; i++)
+	for (size_t i = 0; i < X; i++)
 		v[i][row] *= val[i];
 }
 
