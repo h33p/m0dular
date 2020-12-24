@@ -2,7 +2,6 @@
 #include "memutils.h"
 #include "string.h"
 #include <vector>
-#include <cstdio>
 #include <map>
 #include "assert.h"
 #include "stdlib.h"
@@ -40,7 +39,7 @@ struct pOperation
 		  case 28:
 			  return GetAbsoluteAddress<int32_t>(addr, offset, v1);
 		  default:
-			  printf("INVALID OPPPP!\n");
+			  break;
 		}
 		return addr;
 	}
