@@ -2,6 +2,8 @@
 #include "memutils.h"
 #include "string.h"
 #include <vector>
+#include <cstdio>
+#include <map>
 #include "assert.h"
 #include "stdlib.h"
 
