@@ -117,10 +117,27 @@ MHandle Handles::GetModuleHandle(const char* module)
 		InitializeLibraries();
 	lInfoLock.unlock();
 
-	for (dlinfo_t& i : libraries)
-		if (strstr(i.library, module))
-			return dlopen(i.library, RTLD_NOLOAD | RTLD_NOW);
-	return nullptr;
+	dlinfo_t* bestMatch = nullptr;
+
+	int target = strlen(module);
+	int lendist = 1000000;
+
+	for (dlinfo_t& i : libraries) {
+		if (strstr(i.library, module)) {
+			int len = strlen(i.library) - target;
+
+			if (len < lendist) {
+				bestMatch = &i;
+				lendist = len;
+			}
+
+			if (lendist == 0) {
+				break;
+			}
+		}
+	}
+
+	return bestMatch != nullptr ? dlopen(bestMatch->library, RTLD_NOLOAD | RTLD_NOW) : nullptr;
 #else
 	return ::GetModuleHandleA(module);
 #endif
@@ -137,15 +154,32 @@ ModuleInfo Handles::GetModuleInfo(const char* module)
 	if (!libraries.size())
 		InitializeLibraries();
 
+	const dlinfo_t* bestMatch = nullptr;
+
+	int target = strlen(module);
+	int lendist = 1000000;
+
 	for (const dlinfo_t& i : libraries) {
 		if (strstr(i.library, module)) {
-			ret.handle = dlopen(i.library, RTLD_NOLOAD | RTLD_NOW);
-			ret.address = i.address;
-			ret.size = i.size;
-			lInfoLock.unlock();
-			return ret;
+			int len = strlen(i.library) - target;
+
+			if (len < lendist) {
+				bestMatch = &i;
+				lendist = len;
+			}
+
+			if (lendist == 0) {
+				break;
+			}
 		}
 	}
+
+	if (bestMatch != nullptr) {
+		ret.handle = dlopen(bestMatch->library, RTLD_NOLOAD | RTLD_NOW);
+		ret.address = bestMatch->address;
+		ret.size = bestMatch->size;
+	}
+
 	lInfoLock.unlock();
 #else
 	ret.handle = GetModuleHandle(module);

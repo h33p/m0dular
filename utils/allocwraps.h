@@ -147,6 +147,20 @@ struct offset_pointer_t
 		return offset_pointer_t((uintptr_t)(ptr - i) + (uintptr_t)BASE);
 	}
 
+	template<typename F>
+	constexpr offset_pointer_t& operator+=(F i)
+	{
+		ptr += i;
+		return *this;
+	}
+
+	template<typename F>
+	constexpr offset_pointer_t& operator-=(F i)
+	{
+		ptr -= i;
+		return *this;
+	}
+
 	constexpr offset_pointer_t& operator++()
 	{
 		ptr++;

@@ -17,7 +17,7 @@
 #endif
 
 //This cuts compile times when avx512 is not in use
-#include "clang_avx512.h"
+//#include "clang_avx512.h"
 
 #if defined(__clang__) && defined(_MSC_VER)
 #pragma push_macro("_MM_HINT_T0")
